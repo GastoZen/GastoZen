@@ -1,0 +1,13 @@
+# --- IntelliJ / IDEA ---
+.idea/
+*.iml
+
+# --- HTTP Client requests ---
+/httpRequests/
+
+# --- Datasource local storage ---
+/dataSources/
+
+# --- Firebase credentials ---
+# (ignora qualquer admin SDK JSON que contenha “firebase-adminsdk”)
+src/main/resources/*firebase-adminsdk*.json
