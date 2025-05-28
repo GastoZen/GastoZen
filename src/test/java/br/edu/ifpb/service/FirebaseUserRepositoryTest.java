@@ -1,6 +1,7 @@
 package br.edu.ifpb.service;
 
 import br.edu.ifpb.model.User;
+import br.edu.ifpb.repository.FirebaseUserRepository;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
@@ -12,12 +13,10 @@ import com.google.cloud.firestore.WriteResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -26,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+public class FirebaseUserRepositoryTest {
 
     private static final String COLLECTION_NAME = "users";
 
@@ -60,16 +59,16 @@ public class UserServiceTest {
     @Mock
     private QueryDocumentSnapshot queryDocSnap;
 
-    @InjectMocks
-    private UserService userService;
+    private FirebaseUserRepository userRepository;
 
     @BeforeEach
     void setup() {
         when(firestore.collection(COLLECTION_NAME)).thenReturn(collectionRef);
+        userRepository = new FirebaseUserRepository(firestore);
     }
 
     @Test
-    void testRegisterValidUser() throws ExecutionException, InterruptedException {
+    void testSaveNewUser() throws ExecutionException, InterruptedException {
         User user = new User("John Doe", 30, 5000.0, "john@example.com", "123456789", "Software Engineer");
 
         when(collectionRef.document(user.getEmail())).thenReturn(docRef);
@@ -79,7 +78,7 @@ public class UserServiceTest {
         when(docRef.set(user)).thenReturn(futureWriteResult);
         when(futureWriteResult.get()).thenReturn(writeResult);
 
-        User saved = userService.registerUser(user);
+        User saved = userRepository.save(user);
 
         assertNotNull(saved);
         assertEquals(user.getEmail(), saved.getEmail());
@@ -87,31 +86,20 @@ public class UserServiceTest {
     }
 
     @Test
-    void testRegisterUserWithInvalidEmail() {
-        User user = new User("John Doe", 30, 5000.0, "invalid-email", "123456789", "Software Engineer");
+    void testSaveExistingUserThrows() throws ExecutionException, InterruptedException {
+        User user = new User("John Doe", 30, 5000.0, "john@example.com", "123456789", "Software Engineer");
 
-        assertThrows(IllegalArgumentException.class, () -> userService.registerUser(user));
-        verify(firestore, never()).collection(anyString());
+        when(collectionRef.document(user.getEmail())).thenReturn(docRef);
+        when(docRef.get()).thenReturn(futureDocSnapshot);
+        when(futureDocSnapshot.get()).thenReturn(documentSnapshot);
+        when(documentSnapshot.exists()).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> userRepository.save(user));
+        verify(docRef, never()).set(any());
     }
 
     @Test
-    void testRegisterUserWithNegativeAge() {
-        User user = new User("John Doe", -1, 5000.0, "john@example.com", "123456789", "Software Engineer");
-
-        assertThrows(IllegalArgumentException.class, () -> userService.registerUser(user));
-        verify(firestore, never()).collection(anyString());
-    }
-
-    @Test
-    void testRegisterUserWithNegativeSalary() {
-        User user = new User("John Doe", 30, -5000.0, "john@example.com", "123456789", "Software Engineer");
-
-        assertThrows(IllegalArgumentException.class, () -> userService.registerUser(user));
-        verify(firestore, never()).collection(anyString());
-    }
-
-    @Test
-    void testFindUserByEmail() throws ExecutionException, InterruptedException {
+    void testFindByEmailFound() throws ExecutionException, InterruptedException {
         String email = "john@example.com";
         User user = new User("John Doe", 30, 5000.0, email, "123456789", "Software Engineer");
 
@@ -121,14 +109,28 @@ public class UserServiceTest {
         when(documentSnapshot.exists()).thenReturn(true);
         when(documentSnapshot.toObject(User.class)).thenReturn(user);
 
-        Optional<User> result = userService.findUserByEmail(email);
+        Optional<User> result = userRepository.findByEmail(email);
 
         assertTrue(result.isPresent());
         assertEquals(email, result.get().getEmail());
     }
 
     @Test
-    void testGetAllUsers() throws ExecutionException, InterruptedException {
+    void testFindByEmailNotFound() throws ExecutionException, InterruptedException {
+        String email = "john@example.com";
+
+        when(collectionRef.document(email)).thenReturn(docRef);
+        when(docRef.get()).thenReturn(futureDocSnapshot);
+        when(futureDocSnapshot.get()).thenReturn(documentSnapshot);
+        when(documentSnapshot.exists()).thenReturn(false);
+
+        Optional<User> result = userRepository.findByEmail(email);
+
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void testFindAllUsers() throws ExecutionException, InterruptedException {
         User u1 = new User("John Doe", 30, 5000.0, "john@example.com", "123456789", "Software Engineer");
         User u2 = new User("Jane Doe", 28, 6000.0, "jane@example.com", "987654321", "Product Manager");
 
@@ -137,7 +139,7 @@ public class UserServiceTest {
         when(querySnapshot.getDocuments()).thenReturn(Arrays.asList(queryDocSnap, queryDocSnap));
         when(queryDocSnap.toObject(User.class)).thenReturn(u1, u2);
 
-        List<User> users = userService.getAllUsers();
+        List<User> users = userRepository.findAll();
 
         assertEquals(2, users.size());
         verify(collectionRef, times(1)).get();
@@ -151,8 +153,32 @@ public class UserServiceTest {
         when(docRef.delete()).thenReturn(futureWriteResult);
         when(futureWriteResult.get()).thenReturn(writeResult);
 
-        userService.deleteUser(email);
+        userRepository.delete(email);
 
         verify(docRef, times(1)).delete();
+    }
+
+    @Test
+    void testExistsTrue() throws ExecutionException, InterruptedException {
+        String email = "john@example.com";
+
+        when(collectionRef.document(email)).thenReturn(docRef);
+        when(docRef.get()).thenReturn(futureDocSnapshot);
+        when(futureDocSnapshot.get()).thenReturn(documentSnapshot);
+        when(documentSnapshot.exists()).thenReturn(true);
+
+        assertTrue(userRepository.exists(email));
+    }
+
+    @Test
+    void testExistsFalse() throws ExecutionException, InterruptedException {
+        String email = "john@example.com";
+
+        when(collectionRef.document(email)).thenReturn(docRef);
+        when(docRef.get()).thenReturn(futureDocSnapshot);
+        when(futureDocSnapshot.get()).thenReturn(documentSnapshot);
+        when(documentSnapshot.exists()).thenReturn(false);
+
+        assertFalse(userRepository.exists(email));
     }
 }

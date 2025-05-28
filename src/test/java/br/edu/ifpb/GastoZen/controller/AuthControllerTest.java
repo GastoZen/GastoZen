@@ -1,3 +1,4 @@
+// src/test/java/br/edu/ifpb/GastoZen/controller/AuthControllerTest.java
 package br.edu.ifpb.GastoZen.controller;
 
 import br.edu.ifpb.GastoZen.dto.LoginRequest;
@@ -11,8 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -27,7 +27,6 @@ public class AuthControllerTest {
 
     @Test
     void loginSuccess() throws FirebaseAuthException {
-        // Arrange
         LoginRequest request = new LoginRequest("test@example.com", "password123");
         LoginResponse mockResponse = new LoginResponse(
                 "mock-token",
@@ -37,10 +36,8 @@ public class AuthControllerTest {
         );
         when(authService.login(any(LoginRequest.class))).thenReturn(mockResponse);
 
-        // Act
         ResponseEntity<LoginResponse> response = authController.login(request);
 
-        // Assert
         assertEquals(200, response.getStatusCodeValue());
         assertNotNull(response.getBody());
         assertEquals("mock-token", response.getBody().getToken());
@@ -49,14 +46,13 @@ public class AuthControllerTest {
 
     @Test
     void loginFailure() throws FirebaseAuthException {
-        // Arrange
         LoginRequest request = new LoginRequest("invalid@example.com", "wrong-password");
         when(authService.login(any(LoginRequest.class)))
                 .thenThrow(FirebaseAuthException.class);
-        // Act
+
         ResponseEntity<LoginResponse> response = authController.login(request);
 
-        // Assert
         assertEquals(400, response.getStatusCodeValue());
+        assertNull(response.getBody());
     }
 }

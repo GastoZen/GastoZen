@@ -1,3 +1,4 @@
+// src/test/java/br/edu/ifpb/service/GastoServiceTest.java
 package br.edu.ifpb.service;
 
 import br.edu.ifpb.model.Gasto;
@@ -5,8 +6,10 @@ import br.edu.ifpb.repository.GastoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -22,19 +25,15 @@ public class GastoServiceTest {
     @Mock
     private GastoRepository gastoRepository;
 
+    @InjectMocks
     private GastoService gastoService;
-
-    @BeforeEach
-    void setUp() {
-        gastoService = new GastoService(gastoRepository);
-    }
 
     @Test
     void cadastrarGastoValido() throws ExecutionException, InterruptedException {
         Gasto gasto = new Gasto(
-            new BigDecimal("100.00"),
-            LocalDate.now(),
-            "Compras do mercado"
+                new BigDecimal("100.00"),
+                LocalDate.now(),
+                "Compras do mercado"
         );
 
         when(gastoRepository.save(gasto)).thenReturn(gasto);
@@ -45,20 +44,21 @@ public class GastoServiceTest {
         assertEquals(gasto.getValor(), gastoSalvo.getValor());
         assertEquals(gasto.getData(), gastoSalvo.getData());
         assertEquals(gasto.getDescricao(), gastoSalvo.getDescricao());
-        verify(gastoRepository).save(gasto);
+        verify(gastoRepository, times(1)).save(gasto);
     }
 
     @Test
-    void cadastrarGastoInvalido() {
-        Gasto gasto = new Gasto();
+    void cadastrarGastoInvalido() throws ExecutionException, InterruptedException {
+        Gasto gasto = new Gasto();  // vazio
         assertThrows(IllegalArgumentException.class, () -> gastoService.cadastrarGasto(gasto));
+        verify(gastoRepository, never()).save(any());
     }
 
     @Test
     void listarGastos() throws ExecutionException, InterruptedException {
         List<Gasto> gastos = Arrays.asList(
-            new Gasto(new BigDecimal("100.00"), LocalDate.now(), "Gasto 1"),
-            new Gasto(new BigDecimal("200.00"), LocalDate.now(), "Gasto 2")
+                new Gasto(new BigDecimal("100.00"), LocalDate.now(), "Gasto 1"),
+                new Gasto(new BigDecimal("200.00"), LocalDate.now(), "Gasto 2")
         );
 
         when(gastoRepository.findAll()).thenReturn(gastos);
@@ -67,6 +67,6 @@ public class GastoServiceTest {
 
         assertNotNull(gastosListados);
         assertEquals(2, gastosListados.size());
-        verify(gastoRepository).findAll();
+        verify(gastoRepository, times(1)).findAll();
     }
 }

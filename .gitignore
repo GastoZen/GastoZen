@@ -11,3 +11,6 @@
 # --- Firebase credentials ---
 # (ignora qualquer admin SDK JSON que contenha “firebase-adminsdk”)
 src/main/resources/*firebase-adminsdk*.json
+
+# --- Java build output ---
+/target/
