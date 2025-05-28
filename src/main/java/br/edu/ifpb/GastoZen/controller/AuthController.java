@@ -1,10 +1,10 @@
-package br.edu.ifpb.GastoZen.controller;
+package br.edu.ifpb.gastozen.controller;
 
-import br.edu.ifpb.GastoZen.dto.LoginRequest;
-import br.edu.ifpb.GastoZen.dto.LoginResponse;
-import br.edu.ifpb.GastoZen.dto.RegisterRequest;
-import br.edu.ifpb.GastoZen.model.User;
-import br.edu.ifpb.GastoZen.service.AuthService;
+import br.edu.ifpb.gastozen.dto.LoginRequest;
+import br.edu.ifpb.gastozen.dto.LoginResponse;
+import br.edu.ifpb.gastozen.dto.RegisterRequest;
+import br.edu.ifpb.gastozen.model.User;
+import br.edu.ifpb.gastozen.service.AuthService;
 import com.google.firebase.auth.FirebaseAuthException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -40,7 +40,8 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred during registration");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred during registration");
         }
     }
 

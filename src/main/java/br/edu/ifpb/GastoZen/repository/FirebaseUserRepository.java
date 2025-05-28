@@ -1,22 +1,24 @@
-package br.edu.ifpb.GastoZen.repository;
+package br.edu.ifpb.gastozen.repository;
 
-import br.edu.ifpb.GastoZen.model.User;
+import br.edu.ifpb.gastozen.model.User;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.cloud.FirestoreClient;
+import org.springframework.stereotype.Repository;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import org.springframework.stereotype.Repository;
 
 @Repository
 public class FirebaseUserRepository implements UserRepository {
     private static final String COLLECTION_NAME = "users";
     private final Firestore firestore;
 
-    public FirebaseUserRepository() {
-        this.firestore = FirestoreClient.getFirestore();
+    public FirebaseUserRepository(FirebaseApp firebaseApp) {
+        this.firestore = FirestoreClient.getFirestore(firebaseApp);
     }
 
     @Override
@@ -25,10 +27,10 @@ public class FirebaseUserRepository implements UserRepository {
             if (exists(user.getEmail())) {
                 throw new IllegalArgumentException("User with email " + user.getEmail() + " already exists");
             }
-            
+
             DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(user.getEmail());
             ApiFuture<WriteResult> result = docRef.set(user);
-            result.get(); // Wait for the operation to complete
+            result.get();
             return user;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Error saving user", e);
@@ -41,9 +43,9 @@ public class FirebaseUserRepository implements UserRepository {
             DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(email);
             ApiFuture<DocumentSnapshot> future = docRef.get();
             DocumentSnapshot document = future.get();
-            
+
             if (document.exists()) {
-                return Optional.of(document.toObject(User.class));
+                return Optional.ofNullable(document.toObject(User.class));
             }
             return Optional.empty();
         } catch (InterruptedException | ExecutionException e) {
@@ -57,7 +59,7 @@ public class FirebaseUserRepository implements UserRepository {
             ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).get();
             List<QueryDocumentSnapshot> documents = future.get().getDocuments();
             List<User> users = new ArrayList<>();
-            
+
             for (QueryDocumentSnapshot document : documents) {
                 users.add(document.toObject(User.class));
             }
@@ -93,13 +95,11 @@ public class FirebaseUserRepository implements UserRepository {
     @Override
     public Optional<User> findByUid(String uid) {
         try {
-            // Query users collection where uid equals the provided uid
             Query query = firestore.collection(COLLECTION_NAME).whereEqualTo("uid", uid);
             ApiFuture<QuerySnapshot> future = query.get();
             List<QueryDocumentSnapshot> documents = future.get().getDocuments();
-            
+
             if (!documents.isEmpty()) {
-                // Return the first user with matching uid
                 return Optional.of(documents.get(0).toObject(User.class));
             }
             return Optional.empty();

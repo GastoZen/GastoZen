@@ -2,12 +2,9 @@ package br.edu.ifpb.GastoZen.controller;
 
 import br.edu.ifpb.GastoZen.model.Gasto;
 import br.edu.ifpb.GastoZen.service.GastoService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -20,73 +17,25 @@ public class GastoController {
         this.gastoService = gastoService;
     }
 
-    private String getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName(); // This will be the Firebase UID
-    }
-
     @PostMapping
     public ResponseEntity<Gasto> cadastrarGasto(@RequestBody Gasto gasto) {
         try {
-            Gasto novoGasto = gastoService.cadastrarGasto(gasto, getCurrentUserId());
-            return new ResponseEntity<>(novoGasto, HttpStatus.CREATED);
+            Gasto gastoSalvo = gastoService.cadastrarGasto(gasto);
+            return ResponseEntity.ok(gastoSalvo);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().build();
         } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     @GetMapping
     public ResponseEntity<List<Gasto>> listarGastos() {
         try {
-            List<Gasto> gastos = gastoService.listarGastosDoUsuario(getCurrentUserId());
-            return new ResponseEntity<>(gastos, HttpStatus.OK);
+            List<Gasto> gastos = gastoService.listarGastos();
+            return ResponseEntity.ok(gastos);
         } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Gasto> buscarGasto(@PathVariable String id) {
-        try {
-            return gastoService.buscarGasto(id)
-                    .map(gasto -> {
-                        // Verify the user owns this expense
-                        if (!gasto.getUserId().equals(getCurrentUserId())) {
-                            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-                        }
-                        return new ResponseEntity<>(gasto, HttpStatus.OK);
-                    })
-                    .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
-        } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Gasto> atualizarGasto(@PathVariable String id, @RequestBody Gasto gasto) {
-        try {
-            Gasto gastoAtualizado = gastoService.atualizarGasto(id, gasto, getCurrentUserId());
-            return new ResponseEntity<>(gastoAtualizado, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarGasto(@PathVariable String id) {
-        try {
-            gastoService.deletarGasto(id, getCurrentUserId());
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.internalServerError().build();
         }
     }
 }

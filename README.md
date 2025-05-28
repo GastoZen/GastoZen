@@ -1,24 +1,29 @@
 # GastoZen
 
 ## Overview
-GastoZen is a expense management application that uses Firebase Authentication and Firestore for secure user management and data storage.
+
+GastoZen is a expense management application that uses Firebase Authentication and Firestore for secure user management
+and data storage.
 
 ## Setup
 
 ### Firebase Configuration
+
 1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
 2. Download your service account key file
 3. Place it in `src/main/resources` as `gastozen-firebase-adminsdk.json`
 
 ### Application Properties
+
 ```properties
  spring.security.filter.order=10
- server.port=8080
+server.port=8080
 ```
 
 ## Authentication
 
 ### Register New User
+
 ```bash
  POST /api/auth/register
  Content-Type: application/json
@@ -35,6 +40,7 @@ GastoZen is a expense management application that uses Firebase Authentication a
 ```
 
 ### Login
+
 ```bash
  POST /api/auth/login
  Content-Type: application/json
@@ -46,6 +52,7 @@ GastoZen is a expense management application that uses Firebase Authentication a
 ```
 
 ### Protected Endpoints
+
 All protected endpoints require a valid Firebase ID token in the Authorization header:
 
 ```bash
@@ -55,6 +62,7 @@ All protected endpoints require a valid Firebase ID token in the Authorization h
 ## Expense Management
 
 ### Create Expense
+
 ```bash
  POST /api/gastos
  Authorization: Bearer <token>
@@ -68,6 +76,7 @@ All protected endpoints require a valid Firebase ID token in the Authorization h
 ```
 
 ### List Expenses
+
 ```bash
  GET /api/gastos
  Authorization: Bearer <token>
@@ -83,6 +92,7 @@ The application implements the following security measures:
 - Protected routes configuration
 
 ### Protected Routes
+
 ```java
  /api/gastos/** - Expense management endpoints
  /api/protegido/** - Protected resources
@@ -90,9 +100,12 @@ The application implements the following security measures:
 ```
 
 ### Public Routes
+
 ```java
- /api/auth/login - Login endpoint
- /api/auth/register - Registration endpoint
+ /api/auth/login -
+Login endpoint
+ /api/auth/register -
+Registration endpoint
  /api/publico/** - Public resources
 ```
 
