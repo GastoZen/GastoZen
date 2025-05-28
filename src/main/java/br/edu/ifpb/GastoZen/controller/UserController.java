@@ -1,7 +1,8 @@
 package br.edu.ifpb.GastoZen.controller;
 
-import br.edu.ifpb.model.User;
-import br.edu.ifpb.service.UserService;
+import br.edu.ifpb.GastoZen.service.UserService;
+import br.edu.ifpb.GastoZen.model.User;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

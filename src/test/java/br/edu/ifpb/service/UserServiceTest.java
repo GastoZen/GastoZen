@@ -1,7 +1,9 @@
 package br.edu.ifpb.service;
 
-import br.edu.ifpb.model.User;
-import br.edu.ifpb.repository.UserRepository;
+import br.edu.ifpb.GastoZen.repository.UserRepository;
+import br.edu.ifpb.GastoZen.service.UserService;
+import br.edu.ifpb.GastoZen.model.User;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

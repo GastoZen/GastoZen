@@ -1,6 +1,6 @@
-package br.edu.ifpb.repository;
+package br.edu.ifpb.GastoZen.repository;
 
-import br.edu.ifpb.model.User;
+import br.edu.ifpb.GastoZen.model.User;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class FirebaseUserRepository implements UserRepository {
     private static final String COLLECTION_NAME = "users";
     private final Firestore firestore;
@@ -85,6 +87,24 @@ public class FirebaseUserRepository implements UserRepository {
             return document.exists();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Error checking user existence", e);
+        }
+    }
+
+    @Override
+    public Optional<User> findByUid(String uid) {
+        try {
+            // Query users collection where uid equals the provided uid
+            Query query = firestore.collection(COLLECTION_NAME).whereEqualTo("uid", uid);
+            ApiFuture<QuerySnapshot> future = query.get();
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+            
+            if (!documents.isEmpty()) {
+                // Return the first user with matching uid
+                return Optional.of(documents.get(0).toObject(User.class));
+            }
+            return Optional.empty();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Error finding user by uid", e);
         }
     }
 }
