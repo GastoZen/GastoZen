@@ -52,8 +52,7 @@ public class AuthControllerTest {
         // Arrange
         LoginRequest request = new LoginRequest("invalid@example.com", "wrong-password");
         when(authService.login(any(LoginRequest.class)))
-                .thenThrow(new FirebaseAuthException("error", "Authentication failed"));
-
+                .thenThrow(FirebaseAuthException.class);
         // Act
         ResponseEntity<LoginResponse> response = authController.login(request);
 

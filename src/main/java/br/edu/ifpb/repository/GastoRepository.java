@@ -4,6 +4,7 @@ import br.edu.ifpb.model.Gasto;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.WriteResult;
 import com.google.api.core.ApiFuture;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -19,10 +20,14 @@ public class GastoRepository {
 
     public Gasto save(Gasto gasto) throws ExecutionException, InterruptedException {
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document();
-        ApiFuture<Void> future = docRef.set(gasto);
+        ApiFuture<WriteResult> future = docRef.set(gasto);
         future.get(); // Wait for the operation to complete
-        gasto.setId(Long.parseLong(docRef.getId()));
+        gasto.setId(generateId());
         return gasto;
+    }
+    
+    private Long generateId() {
+        return System.currentTimeMillis();
     }
 
     public List<Gasto> findAll() throws ExecutionException, InterruptedException {

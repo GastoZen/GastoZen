@@ -30,7 +30,7 @@ public class AuthService {
                     userRecord.getDisplayName()
             );
         } catch (FirebaseAuthException e) {
-            throw new FirebaseAuthException(e.getErrorCode().toString(), "Authentication failed: " + e.getMessage());
+            throw e; // Re-throw the original exception
         }
     }
 
