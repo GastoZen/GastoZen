@@ -1,42 +1,82 @@
-package br.edu.ifpb.GastoZen.repository;
+package br.edu.ifpb.gastozen.repository;
 
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.QuerySnapshot;
-import com.google.cloud.firestore.WriteResult;
-
-import br.edu.ifpb.GastoZen.model.Gasto;
-
+import br.edu.ifpb.gastozen.model.Gasto;
 import com.google.api.core.ApiFuture;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
+import com.google.cloud.firestore.*;
+import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+
+@Repository
 public class GastoRepository {
-    private final Firestore firestore;
     private static final String COLLECTION_NAME = "gastos";
+    private final Firestore firestore;
 
     public GastoRepository(Firestore firestore) {
         this.firestore = firestore;
     }
 
     public Gasto save(Gasto gasto) throws ExecutionException, InterruptedException {
-        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document();
-        ApiFuture<WriteResult> future = docRef.set(gasto);
-        future.get(); // Wait for the operation to complete
-        gasto.setId(generateId());
+        if (gasto.getId() == null) {
+            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document();
+            gasto.setId(docRef.getId());
+            ApiFuture<WriteResult> future = docRef.set(gasto);
+            future.get();
+        } else {
+            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(gasto.getId());
+            ApiFuture<WriteResult> future = docRef.set(gasto);
+            future.get();
+        }
         return gasto;
     }
-    
-    private Long generateId() {
-        return System.currentTimeMillis();
+
+    public Optional<Gasto> findById(String id) throws ExecutionException, InterruptedException {
+        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(id);
+        ApiFuture<DocumentSnapshot> future = docRef.get();
+        DocumentSnapshot document = future.get();
+
+        if (document.exists()) {
+            return Optional.ofNullable(document.toObject(Gasto.class));
+        }
+        return Optional.empty();
+    }
+
+    public List<Gasto> findByUserId(String userId) throws ExecutionException, InterruptedException {
+        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
+                .whereEqualTo("userId", userId)
+                .orderBy("data", Query.Direction.DESCENDING)
+                .get();
+
+        List<Gasto> gastos = new ArrayList<>();
+        QuerySnapshot querySnapshot = future.get();
+
+        for (QueryDocumentSnapshot document : querySnapshot.getDocuments()) {
+            gastos.add(document.toObject(Gasto.class));
+        }
+
+        return gastos;
+    }
+
+    public void delete(String id) throws ExecutionException, InterruptedException {
+        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(id);
+        ApiFuture<WriteResult> future = docRef.delete();
+        future.get();
     }
 
     public List<Gasto> findAll() throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).get();
+        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
+                .orderBy("data", Query.Direction.DESCENDING)
+                .get();
+
+        List<Gasto> gastos = new ArrayList<>();
         QuerySnapshot querySnapshot = future.get();
-        return querySnapshot.getDocuments().stream()
-                .map(document -> document.toObject(Gasto.class))
-                .collect(Collectors.toList());
+
+        for (QueryDocumentSnapshot document : querySnapshot.getDocuments()) {
+            gastos.add(document.toObject(Gasto.class));
+        }
+        return gastos;
     }
 }

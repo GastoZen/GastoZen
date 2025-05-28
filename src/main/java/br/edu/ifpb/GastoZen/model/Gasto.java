@@ -1,52 +1,33 @@
-package br.edu.ifpb.GastoZen.model;
+package br.edu.ifpb.gastozen.model;
 
-import java.time.LocalDate;
+import com.google.cloud.Timestamp;
+import com.google.cloud.firestore.annotation.DocumentId;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Gasto {
-    private Long id;
+    @DocumentId
+    private String id;
+    private String userId;
     private BigDecimal valor;
-    private LocalDate data;
+    private Timestamp data;
     private String descricao;
+    private String categoria;
 
-    public Gasto() {
-    }
-
-    public Gasto(BigDecimal valor, LocalDate data, String descricao) {
+    public Gasto(String userId, BigDecimal valor, LocalDate data, String descricao, String categoria) {
+        this.userId = userId;
         this.valor = valor;
-        this.data = data;
+        this.data = Timestamp.of(Date.from(data.atStartOfDay(ZoneId.systemDefault()).toInstant()));
         this.descricao = descricao;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public BigDecimal getValor() {
-        return valor;
-    }
-
-    public void setValor(BigDecimal valor) {
-        this.valor = valor;
-    }
-
-    public LocalDate getData() {
-        return data;
-    }
-
-    public void setData(LocalDate data) {
-        this.data = data;
-    }
-
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
+        this.categoria = categoria;
     }
 }

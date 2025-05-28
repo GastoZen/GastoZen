@@ -1,17 +1,17 @@
-package br.edu.ifpb.GastoZen.service;
+package br.edu.ifpb.gastozen.service;
 
-import br.edu.ifpb.GastoZen.dto.LoginRequest;
-import br.edu.ifpb.GastoZen.dto.LoginResponse;
-import br.edu.ifpb.GastoZen.dto.RegisterRequest;
-import br.edu.ifpb.GastoZen.model.User;
-import br.edu.ifpb.GastoZen.repository.UserRepository;
-
+import br.edu.ifpb.gastozen.dto.LoginRequest;
+import br.edu.ifpb.gastozen.dto.LoginResponse;
+import br.edu.ifpb.gastozen.dto.RegisterRequest;
+import br.edu.ifpb.gastozen.model.User;
+import br.edu.ifpb.gastozen.repository.UserRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.google.firebase.auth.UserRecord.CreateRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.Optional;
 
 @Service
@@ -22,44 +22,37 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest request) throws FirebaseAuthException {
         try {
-            // Note: This is using Firebase Admin SDK to generate a custom token
-            // The actual email/password verification should be done on the client side
-            // using Firebase Authentication SDK
-            
             UserRecord userRecord = FirebaseAuth.getInstance()
                     .getUserByEmail(request.getEmail());
-            
-            // Generate a custom token that the client can use to authenticate
+
             String customToken = FirebaseAuth.getInstance()
                     .createCustomToken(userRecord.getUid());
 
-            // Get user from repository to include additional data
             Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
-            
-            if (!userOptional.isPresent()) {
-                // User exists in Firebase but not in our database, create a basic record
+
+            if (userOptional.isEmpty()) {
                 User newUser = new User(
-                    userRecord.getUid(),
-                    userRecord.getEmail(),
-                    userRecord.getDisplayName() != null ? userRecord.getDisplayName() : ""
+                        userRecord.getUid(),
+                        userRecord.getEmail(),
+                        userRecord.getDisplayName() != null ? userRecord.getDisplayName() : ""
                 );
                 userRepository.save(newUser);
-                
+
                 return new LoginResponse(
-                    customToken,
-                    newUser.getUid(),
-                    newUser.getEmail(),
-                    newUser.getName()
+                        customToken,
+                        newUser.getUid(),
+                        newUser.getEmail(),
+                        newUser.getName()
                 );
             }
-            
+
             User user = userOptional.get();
-            
+
             return new LoginResponse(
-                customToken,
-                user.getUid(),
-                user.getEmail(),
-                user.getName()
+                    customToken,
+                    user.getUid(),
+                    user.getEmail(),
+                    user.getName()
             );
         } catch (FirebaseAuthException e) {
             throw new FirebaseAuthException(e.getErrorCode(), "Authentication failed: " + e.getMessage(), e, null, null);
@@ -70,41 +63,33 @@ public class AuthService {
         try {
             UserRecord userRecord = FirebaseAuth.getInstance().getUser(uid);
             Optional<User> userOptional = userRepository.findByUid(userRecord.getUid());
-            
-            if (userOptional.isPresent()) {
-                return userOptional.get();
-            } else {
-                return new User(
+
+            return userOptional.orElseGet(() -> new User(
                     userRecord.getUid(),
                     userRecord.getEmail(),
                     userRecord.getDisplayName()
-                );
-            }
+            ));
         } catch (FirebaseAuthException e) {
             throw new FirebaseAuthException(e.getErrorCode(), "Failed to get user: " + e.getMessage(), e, null, null);
         }
     }
-    
+
     public User register(RegisterRequest request) throws FirebaseAuthException {
-        // Validate user data
         validateUserData(request);
-        
+
         try {
-            // Check if user already exists by email
             if (userRepository.exists(request.getEmail())) {
                 throw new IllegalArgumentException("User with this email already exists");
             }
-            
-            // Create user in Firebase Authentication
+
             CreateRequest createRequest = new CreateRequest()
                     .setEmail(request.getEmail())
                     .setPassword(request.getPassword())
                     .setDisplayName(request.getName())
                     .setEmailVerified(false);
-            
+
             UserRecord userRecord = FirebaseAuth.getInstance().createUser(createRequest);
-            
-            // Create user in database with all properties
+
             User user = new User(
                     userRecord.getUid(),
                     userRecord.getEmail(),
@@ -114,16 +99,15 @@ public class AuthService {
                     request.getPhone(),
                     request.getOccupation()
             );
-            
-            // Save user to repository
+
             userRepository.save(user);
-            
+
             return user;
         } catch (FirebaseAuthException e) {
             throw new FirebaseAuthException(e.getErrorCode(), "Registration failed: " + e.getMessage(), e, null, null);
         }
     }
-    
+
     private void validateUserData(RegisterRequest request) {
         if (request.getName() == null || request.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Name cannot be empty");
