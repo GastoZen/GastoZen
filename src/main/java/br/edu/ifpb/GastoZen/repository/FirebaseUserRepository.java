@@ -1,6 +1,6 @@
-package br.edu.ifpb.gastozen.repository;
+package br.edu.ifpb.GastoZen.repository;
 
-import br.edu.ifpb.gastozen.model.User;
+import br.edu.ifpb.GastoZen.model.User;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import com.google.firebase.FirebaseApp;
@@ -37,7 +37,6 @@ public class FirebaseUserRepository implements UserRepository {
         }
     }
 
-    @Override
     public Optional<User> findByEmail(String email) {
         try {
             DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(email);
@@ -54,11 +53,11 @@ public class FirebaseUserRepository implements UserRepository {
     }
 
     @Override
-    public List<User> findAll() {
+    public List<Object> findAll() {
         try {
             ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).get();
             List<QueryDocumentSnapshot> documents = future.get().getDocuments();
-            List<User> users = new ArrayList<>();
+            List<Object> users = new ArrayList<>();
 
             for (QueryDocumentSnapshot document : documents) {
                 users.add(document.toObject(User.class));
@@ -92,7 +91,6 @@ public class FirebaseUserRepository implements UserRepository {
         }
     }
 
-    @Override
     public Optional<User> findByUid(String uid) {
         try {
             Query query = firestore.collection(COLLECTION_NAME).whereEqualTo("uid", uid);

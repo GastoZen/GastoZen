@@ -1,10 +1,10 @@
-package br.edu.ifpb.gastozen.service;
+package br.edu.ifpb.GastoZen.service;
 
-import br.edu.ifpb.gastozen.dto.LoginRequest;
-import br.edu.ifpb.gastozen.dto.LoginResponse;
-import br.edu.ifpb.gastozen.dto.RegisterRequest;
-import br.edu.ifpb.gastozen.model.User;
-import br.edu.ifpb.gastozen.repository.UserRepository;
+import br.edu.ifpb.GastoZen.dto.LoginRequest;
+import br.edu.ifpb.GastoZen.dto.LoginResponse;
+import br.edu.ifpb.GastoZen.dto.RegisterRequest;
+import br.edu.ifpb.GastoZen.model.User;
+import br.edu.ifpb.GastoZen.repository.UserRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;

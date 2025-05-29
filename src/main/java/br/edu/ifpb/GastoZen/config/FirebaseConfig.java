@@ -1,4 +1,4 @@
-package br.edu.ifpb.gastozen.config;
+package br.edu.ifpb.GastoZen.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;

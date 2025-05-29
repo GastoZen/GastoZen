@@ -1,7 +1,7 @@
-package br.edu.ifpb.gastozen.service;
+package br.edu.ifpb.GastoZen.service;
 
-import br.edu.ifpb.gastozen.model.User;
-import br.edu.ifpb.gastozen.repository.UserRepository;
+import br.edu.ifpb.GastoZen.model.User;
+import br.edu.ifpb.GastoZen.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,7 +25,7 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-    public List<User> getAllUsers() {
+    public List<Object> getAllUsers() {
         return userRepository.findAll();
     }
 

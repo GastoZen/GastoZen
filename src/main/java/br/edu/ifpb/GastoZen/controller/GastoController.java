@@ -1,7 +1,7 @@
-package br.edu.ifpb.gastozen.controller;
+package br.edu.ifpb.GastoZen.controller;
 
-import br.edu.ifpb.gastozen.model.Gasto;
-import br.edu.ifpb.gastozen.service.GastoService;
+import br.edu.ifpb.GastoZen.model.Gasto;
+import br.edu.ifpb.GastoZen.service.GastoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

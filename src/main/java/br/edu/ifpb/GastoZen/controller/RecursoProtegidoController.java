@@ -1,4 +1,4 @@
-package br.edu.ifpb.gastozen.controller;
+package br.edu.ifpb.GastoZen.controller;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;

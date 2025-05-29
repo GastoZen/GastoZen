@@ -1,7 +1,7 @@
-package br.edu.ifpb.gastozen.service;
+package br.edu.ifpb.GastoZen.service;
 
-import br.edu.ifpb.gastozen.model.Gasto;
-import br.edu.ifpb.gastozen.repository.GastoRepository;
+import br.edu.ifpb.GastoZen.model.Gasto;
+import br.edu.ifpb.GastoZen.repository.GastoRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

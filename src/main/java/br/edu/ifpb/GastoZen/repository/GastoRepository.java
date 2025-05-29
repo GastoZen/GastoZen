@@ -1,6 +1,6 @@
-package br.edu.ifpb.gastozen.repository;
+package br.edu.ifpb.GastoZen.repository;
 
-import br.edu.ifpb.gastozen.model.Gasto;
+import br.edu.ifpb.GastoZen.model.Gasto;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import org.springframework.stereotype.Repository;

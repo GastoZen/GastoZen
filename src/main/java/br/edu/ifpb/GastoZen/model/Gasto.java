@@ -1,4 +1,4 @@
-package br.edu.ifpb.gastozen.model;
+package br.edu.ifpb.GastoZen.model;
 
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.annotation.DocumentId;

@@ -1,7 +1,7 @@
-package br.edu.ifpb.gastozen.controller;
+package br.edu.ifpb.GastoZen.controller;
 
-import br.edu.ifpb.gastozen.model.User;
-import br.edu.ifpb.gastozen.service.UserService;
+import br.edu.ifpb.GastoZen.model.User;
+import br.edu.ifpb.GastoZen.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,8 +37,8 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
+    public Object getAllUsers() {
+        List<Object> users = userService.getAllUsers();
         return new ResponseEntity<>(users, HttpStatus.OK);
     }
 

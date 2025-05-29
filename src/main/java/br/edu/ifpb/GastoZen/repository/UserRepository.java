@@ -1,6 +1,6 @@
-package br.edu.ifpb.gastozen.repository;
+package br.edu.ifpb.GastoZen.repository;
 
-import br.edu.ifpb.gastozen.model.User;
+import br.edu.ifpb.GastoZen.model.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +12,7 @@ public interface UserRepository {
 
     Optional<User> findByUid(String uid);
 
-    List<User> findAll();
+    List<Object> findAll();
 
     void delete(String email);
 

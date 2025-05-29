@@ -1,4 +1,4 @@
-package br.edu.ifpb.gastozen.model;
+package br.edu.ifpb.GastoZen.model;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

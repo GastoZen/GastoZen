@@ -1,4 +1,4 @@
-package br.edu.ifpb.gastozen.dto;
+package br.edu.ifpb.GastoZen.dto;
 
 import lombok.Data;
 

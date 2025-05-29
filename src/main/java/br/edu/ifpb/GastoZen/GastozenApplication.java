@@ -1,4 +1,4 @@
-package br.edu.ifpb.gastozen;
+package br.edu.ifpb.GastoZen;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
