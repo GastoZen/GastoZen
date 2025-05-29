@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Login - GastoZen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        async function login(event) {
+            event.preventDefault();
+
+            const messageDiv = document.getElementById("message");
+            messageDiv.innerText = "";
+            messageDiv.className = "";
+
+            const credentials = {
+                email: document.getElementById("email").value,
+                password: document.getElementById("password").value
+            };
+
+            try {
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(credentials)
+                });
+
+                if (!response.ok) {
+                    throw new Error("Email ou senha inválidos.");
+                }
+
+                const data = await response.json();
+                localStorage.setItem("token", data.token);
+
+                messageDiv.innerText = "Login realizado com sucesso! Redirecionando...";
+                messageDiv.className = "text-green-600 font-semibold mt-4 text-center animate-pulse";
+
+                setTimeout(() => {
+                    window.location.href = "/gastos.html";
+                }, 2000);
+
+            } catch (error) {
+                messageDiv.innerText = "Erro ao fazer login: " + error.message;
+                messageDiv.className = "text-red-600 font-medium mt-4 text-center";
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+<div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+    <form onsubmit="login(event)">
+        <div class="mb-4">
+            <input id="email" type="email" placeholder="Email" required class="w-full p-2 border rounded" />
+        </div>
+        <div class="mb-6">
+            <input id="password" type="password" placeholder="Senha" required class="w-full p-2 border rounded" />
+        </div>
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition duration-200">
+            Entrar
+        </button>
+    </form>
+    <p class="mt-4 text-center text-sm">
+        Não tem conta?
+        <a href="/register.html" class="text-blue-600 hover:underline">Cadastre-se</a>
+    </p>
+    <!-- Mensagem de status -->
+    <div id="message"></div>
+</div>
+</body>
+</html>
