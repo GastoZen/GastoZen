@@ -2,8 +2,11 @@ package br.edu.ifpb.GastoZen.service;
 
 import br.edu.ifpb.GastoZen.model.Gasto;
 import br.edu.ifpb.GastoZen.repository.GastoRepository;
+import com.google.cloud.Timestamp;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -19,6 +22,7 @@ public class GastoService {
     public Gasto cadastrarGasto(Gasto gasto, String userId) throws ExecutionException, InterruptedException {
         validateGasto(gasto);
         gasto.setUserId(userId);  // Ensure the expense is associated with the user
+
         return gastoRepository.save(gasto);
     }
 

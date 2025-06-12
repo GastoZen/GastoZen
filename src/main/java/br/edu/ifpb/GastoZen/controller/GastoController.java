@@ -2,6 +2,8 @@ package br.edu.ifpb.GastoZen.controller;
 
 import br.edu.ifpb.GastoZen.model.Gasto;
 import br.edu.ifpb.GastoZen.service.GastoService;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,16 +28,31 @@ public class GastoController {
     }
 
     @PostMapping
-    public ResponseEntity<Gasto> cadastrarGasto(@RequestBody Gasto gasto) {
+    public ResponseEntity<?> cadastrarGasto(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
+            @RequestBody Gasto gasto) {
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
+        }
+
+        String idToken = authorizationHeader.substring(7);
         try {
-            Gasto novoGasto = gastoService.cadastrarGasto(gasto, getCurrentUserId());
-            return new ResponseEntity<>(novoGasto, HttpStatus.CREATED);
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String userId = decodedToken.getUid();
+
+            Gasto gastoSalvo = gastoService.cadastrarGasto(gasto, userId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(gastoSalvo);
+
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Erro de validação: " + e.getMessage());
         } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao cadastrar gasto: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
         }
     }
+
 
     @GetMapping
     public ResponseEntity<List<Gasto>> listarGastos() {

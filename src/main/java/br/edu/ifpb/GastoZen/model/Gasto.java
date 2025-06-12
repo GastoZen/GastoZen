@@ -19,14 +19,15 @@ public class Gasto {
     private String id;
     private String userId;
     private BigDecimal valor;
-    private Timestamp data;
+    private String data;
     private String descricao;
     private String categoria;
 
-    public Gasto(String userId, BigDecimal valor, LocalDate data, String descricao, String categoria) {
+
+    public Gasto(String userId, BigDecimal valor, String data, String descricao, String categoria) {
         this.userId = userId;
         this.valor = valor;
-        this.data = Timestamp.of(Date.from(data.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        this.data = data;
         this.descricao = descricao;
         this.categoria = categoria;
     }
