@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro - GastoZen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    async function register(event) {
+      event.preventDefault();
+
+      const messageDiv = document.getElementById("message");
+      messageDiv.innerText = "";
+      messageDiv.className = "";
+
+      const userData = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+        age: parseInt(document.getElementById("age").value),
+        salary: parseFloat(document.getElementById("salary").value),
+        phone: document.getElementById("phone").value,
+        occupation: document.getElementById("occupation").value
+      };
+
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userData)
+        });
+
+        if (!response.ok) {
+          const errorMsg = await response.text();
+          throw new Error(errorMsg);
+        }
+
+        messageDiv.innerText = "Cadastro realizado com sucesso! Redirecionando...";
+        messageDiv.className = "text-green-600 font-medium mt-4 text-center";
+
+        setTimeout(() => {
+          window.location.href = "/login.html";
+        }, 2000);
+
+      } catch (error) {
+        messageDiv.innerText = "Erro ao cadastrar: " + error.message;
+        messageDiv.className = "text-red-600 font-medium mt-4 text-center";
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center h-screen">
+<div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+  <h2 class="text-2xl font-bold mb-6 text-center">Cadastro de Usuário</h2>
+  <form onsubmit="register(event)">
+    <div class="mb-4">
+      <input id="name" placeholder="Nome" required class="w-full p-2 border rounded" />
+    </div>
+    <div class="mb-4">
+      <input id="email" type="email" placeholder="Email" required class="w-full p-2 border rounded" />
+    </div>
+    <div class="mb-4">
+      <input id="password" type="password" placeholder="Senha" required class="w-full p-2 border rounded" />
+    </div>
+    <div class="mb-4">
+      <input id="age" type="number" placeholder="Idade" required min="1" class="w-full p-2 border rounded" />
+    </div>
+    <div class="mb-4">
+      <input id="salary" type="number" placeholder="Salário" required min="0" step="0.01" class="w-full p-2 border rounded" />
+    </div>
+    <div class="mb-4">
+      <input id="phone" placeholder="Telefone" required class="w-full p-2 border rounded" />
+    </div>
+    <div class="mb-6">
+      <input id="occupation" placeholder="Ocupação" required class="w-full p-2 border rounded" />
+    </div>
+    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+      Cadastrar
+    </button>
+  </form>
+  <p class="mt-4 text-center text-sm">
+    Já tem conta?
+    <a href="/login.html" class="text-blue-600 hover:underline">Faça login</a>
+  </p>
+  <!-- Div para exibir mensagens -->
+  <div id="message"></div>
+</div>
+</body>
+</html>
