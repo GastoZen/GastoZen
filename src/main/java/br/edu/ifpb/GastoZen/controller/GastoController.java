@@ -157,4 +157,29 @@ public class GastoController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
         }
     }
+
+    @GetMapping("/ranking")
+    public ResponseEntity<?> rankingPorCategoria(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader) {
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
+        }
+
+        String idToken = authorizationHeader.substring(7);
+        try {
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String userId = decodedToken.getUid();
+
+            // Chama o serviço que calcula o ranking
+            var ranking = gastoService.calcularRankingPorCategoria(userId);
+            return ResponseEntity.ok(ranking);
+
+        } catch (ExecutionException | InterruptedException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao gerar ranking: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
+        }
+    }
+
 }

@@ -5,14 +5,17 @@ import br.edu.ifpb.GastoZen.repository.GastoRepository;
 import com.google.cloud.Timestamp;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 @Service
 public class GastoService {
@@ -89,4 +92,16 @@ public class GastoService {
             throw new IllegalArgumentException("Formato de data inválido. Use o formato YYYY-MM-DD");
         }
     }
+//novo
+    public Map<String, BigDecimal> calcularRankingPorCategoria(String userId) throws ExecutionException, InterruptedException {
+        List<Gasto> gastos = gastoRepository.findByUserId(userId);
+
+        return gastos.stream()
+                .collect(Collectors.groupingBy(
+                        Gasto::getCategoria,
+                        Collectors.reducing(BigDecimal.ZERO, Gasto::getValor, BigDecimal::add)
+                ));
+    }
+
+
 }
