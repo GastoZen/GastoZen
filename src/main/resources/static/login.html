@@ -54,6 +54,8 @@
 
                 // 4. Salva o ID token no localStorage
                 localStorage.setItem("token", idToken);
+                localStorage.setItem("loginTime", Date.now().toString());
+                localStorage.setItem("lastActivity", Date.now().toString());
 
                 messageDiv.innerText = "Login realizado com sucesso! Redirecionando...";
                 messageDiv.className = "text-green-600 font-semibold mt-4 text-center animate-pulse";

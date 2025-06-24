@@ -5,6 +5,7 @@
   <title>Cadastro de Gasto - GastoZen</title>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-auth-compat.js"></script>
+  <script src="session-manager.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBwOY4exdZ-YAJfaluMcqKHSpZcV2V7iAU",
@@ -17,7 +18,7 @@
   <script>
     // Espera o Firebase autenticar antes de agir
     firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) {
+      if (!user || !sessionManager.isSessionValid()) {
         alert("Usuário não autenticado. Faça login novamente.");
         window.location.href = "/login.html";
         return;
@@ -26,6 +27,7 @@
       // Autenticado — pega o ID token atualizado
       const idToken = await user.getIdToken(true);
       localStorage.setItem("token", idToken);
+      sessionManager.updateLastActivity();
     });
   </script>
 
