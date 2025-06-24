@@ -5,7 +5,10 @@ import br.edu.ifpb.GastoZen.repository.GastoRepository;
 import com.google.cloud.Timestamp;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -72,6 +75,18 @@ public class GastoService {
         }
         if (gasto.getValor().signum() <= 0) {
             throw new IllegalArgumentException("O valor do gasto deve ser maior que zero");
+        }
+        
+        // Validar data
+        try {
+            LocalDate dataGasto = LocalDate.parse(gasto.getData(), DateTimeFormatter.ISO_LOCAL_DATE);
+            LocalDate hoje = LocalDate.now();
+            
+            if (dataGasto.isAfter(hoje)) {
+                throw new IllegalArgumentException("A data do gasto não pode ser futura");
+            }
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Formato de data inválido. Use o formato YYYY-MM-DD");
         }
     }
 }

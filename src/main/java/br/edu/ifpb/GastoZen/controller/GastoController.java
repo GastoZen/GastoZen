@@ -81,16 +81,31 @@ public class GastoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Gasto> atualizarGasto(@PathVariable String id, @RequestBody Gasto gasto) {
+    public ResponseEntity<?> atualizarGasto(
+            @PathVariable String id,
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
+            @RequestBody Gasto gasto) {
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
+        }
+
+        String idToken = authorizationHeader.substring(7);
         try {
-            Gasto gastoAtualizado = gastoService.atualizarGasto(id, gasto, getCurrentUserId());
-            return new ResponseEntity<>(gastoAtualizado, HttpStatus.OK);
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String userId = decodedToken.getUid();
+
+            Gasto gastoAtualizado = gastoService.atualizarGasto(id, gasto, userId);
+            return ResponseEntity.ok(gastoAtualizado);
+
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Erro de validação: " + e.getMessage());
         } catch (IllegalStateException e) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usuário não autorizado");
         } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar gasto: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
         }
     }
 
