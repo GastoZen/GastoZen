@@ -5,6 +5,7 @@
   <title>Cadastro de Gasto - GastoZen</title>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-auth-compat.js"></script>
+  <script src="session-manager.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBwOY4exdZ-YAJfaluMcqKHSpZcV2V7iAU",
@@ -17,7 +18,7 @@
   <script>
     // Espera o Firebase autenticar antes de agir
     firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) {
+      if (!user || !sessionManager.isSessionValid()) {
         alert("Usuário não autenticado. Faça login novamente.");
         window.location.href = "/login.html";
         return;
@@ -26,6 +27,7 @@
       // Autenticado — pega o ID token atualizado
       const idToken = await user.getIdToken(true);
       localStorage.setItem("token", idToken);
+      sessionManager.updateLastActivity();
     });
   </script>
 
@@ -53,53 +55,84 @@
       });
 
       if (response.status === 201) {
-        alert("Gasto cadastrado com sucesso!");
+        // ✅ Mostra o toast de sucesso
+        const toast = document.getElementById("toast-sucesso");
+        toast.classList.remove("hidden", "opacity-0");
+        toast.classList.add("opacity-100");
+
+        setTimeout(() => {
+          toast.classList.remove("opacity-100");
+          toast.classList.add("opacity-0");
+          setTimeout(() => toast.classList.add("hidden"), 500);
+        }, 2500);
+
+        // ✅ Limpa o formulário
         document.getElementById("form-gasto").reset();
       } else {
         const msg = await response.text();
         alert("Erro ao cadastrar gasto: " + msg);
       }
     }
+
+
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex justify-center items-center h-screen">
-<div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-  <h2 class="text-2xl font-bold mb-6 text-center">Cadastrar Gasto</h2>
-  <form id="form-gasto" onsubmit="cadastrarGasto(event)">
-    <div class="mb-4">
-      <label for="descricao" class="block text-sm font-medium">Descrição</label>
-      <input type="text" id="descricao" required class="mt-1 p-2 w-full border rounded" />
+<body class="bg-gradient-to-br from-blue-100 to-blue-200 min-h-screen flex items-center justify-center">
+<div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md transition-all duration-300">
+  <h2 class="text-3xl font-bold mb-6 text-center text-blue-800">Cadastrar Gasto</h2>
+
+  <div class="mb-6 text-center">
+    <a href="lista-gastos.html" class="text-blue-600 hover:underline text-sm hover:text-blue-800 transition">
+      📋 Ver meus gastos
+    </a>
+  </div>
+
+  <form id="form-gasto" onsubmit="cadastrarGasto(event)" class="space-y-4">
+    <div>
+      <label for="descricao" class="block text-sm font-semibold text-gray-700">Descrição</label>
+      <input type="text" id="descricao" required
+             class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
     </div>
 
-    <div class="mb-4">
-      <label for="valor" class="block text-sm font-medium">Valor (R$)</label>
-      <input type="number" id="valor" step="0.01" min="0.01" required class="mt-1 p-2 w-full border rounded" />
+    <div>
+      <label for="valor" class="block text-sm font-semibold text-gray-700">Valor (R$)</label>
+      <input type="number" id="valor" step="0.01" min="0.01" required
+             class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
     </div>
 
-    <div class="mb-6">
-      <label for="data" class="block text-sm font-medium">Data</label>
-      <input type="date" id="data" required class="mt-1 p-2 w-full border rounded" />
+    <div>
+      <label for="data" class="block text-sm font-semibold text-gray-700">Data</label>
+      <input type="date" id="data" required
+             class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
     </div>
-    <div class="mb-6">
-      <label for="categoria" class="block text-sm font-medium">Categoria</label>
-      <select id="categoria" required class="mt-1 p-2 w-full border rounded">
+
+    <div>
+      <label for="categoria" class="block text-sm font-semibold text-gray-700">Categoria</label>
+      <select id="categoria" required
+              class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
         <option value="">Selecione uma categoria</option>
-        <option value="Alimentação">Alimentação</option>
-        <option value="Transporte">Transporte</option>
-        <option value="Lazer">Lazer</option>
-        <option value="Educação">Educação</option>
-        <option value="Saúde">Saúde</option>
-        <option value="Moradia">Moradia</option>
-        <option value="Assinaturas">Assinaturas</option>
-        <option value="Outros">Outros</option>
+        <option value="Alimentação">🍽 Alimentação</option>
+        <option value="Transporte">🚗 Transporte</option>
+        <option value="Lazer">🎮 Lazer</option>
+        <option value="Educação">📚 Educação</option>
+        <option value="Saúde">🏥 Saúde</option>
+        <option value="Moradia">🏠 Moradia</option>
+        <option value="Assinaturas">💳 Assinaturas</option>
+        <option value="Outros">🔹 Outros</option>
       </select>
     </div>
 
-    <button type="submit" class="bg-blue-600 text-white w-full py-2 px-4 rounded hover:bg-blue-700">
-      Cadastrar Gasto
+    <button type="submit"
+            class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+      ➕ Cadastrar Gasto
     </button>
   </form>
 </div>
 </body>
+<!-- Toast de Sucesso -->
+<div id="toast-sucesso" class="hidden fixed top-6 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 text-sm transition-opacity duration-500">
+  ✅ Gasto cadastrado com sucesso!
+</div>
+
 </html>

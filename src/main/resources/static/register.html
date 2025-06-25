@@ -19,7 +19,10 @@
         age: parseInt(document.getElementById("age").value),
         salary: parseFloat(document.getElementById("salary").value),
         phone: document.getElementById("phone").value,
-        occupation: document.getElementById("occupation").value
+        occupation: document.getElementById("occupation").value,
+        // novos campos:
+        securityQuestionId: parseInt(document.getElementById("securityQuestion").value),
+        securityAnswer: document.getElementById("securityAnswer").value.trim()
       };
 
       try {
@@ -70,9 +73,28 @@
     <div class="mb-4">
       <input id="phone" placeholder="Telefone" required class="w-full p-2 border rounded" />
     </div>
-    <div class="mb-6">
+    <div class="mb-4">
       <input id="occupation" placeholder="Ocupação" required class="w-full p-2 border rounded" />
     </div>
+
+    <!-- Pergunta de segurança -->
+    <div class="mb-4">
+      <label for="securityQuestion" class="block mb-1">Pergunta de segurança</label>
+      <select id="securityQuestion" required class="w-full p-2 border rounded">
+        <option value="">Selecione uma pergunta</option>
+        <option value="1">Qual o nome do seu primeiro pet?</option>
+        <option value="2">Em que cidade você nasceu?</option>
+        <option value="3">Qual o nome da sua escola primária?</option>
+        <option value="4">Qual seu livro favorito?</option>
+      </select>
+    </div>
+
+    <!-- Resposta -->
+    <div class="mb-6">
+      <label for="securityAnswer" class="block mb-1">Resposta</label>
+      <input id="securityAnswer" type="text" placeholder="Resposta" required class="w-full p-2 border rounded" />
+    </div>
+
     <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
       Cadastrar
     </button>

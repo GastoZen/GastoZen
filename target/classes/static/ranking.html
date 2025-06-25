@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Ranking por Categoria - GastoZen</title>
+  <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwOY4exdZ-YAJfaluMcqKHSpZcV2V7iAU",
+      authDomain: "gastozen-24e09.firebaseapp.com",
+      projectId: "gastozen-24e09"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <style>
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div class="container mx-auto p-6">
+  <h1 class="text-4xl font-bold mb-8 text-center text-blue-800">📊 Ranking de Gastos por Categoria</h1>
+
+  <div class="flex justify-center mb-8">
+    <a href="lista-gastos.html" class="bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-lg shadow hover:bg-blue-50 transition duration-200">
+      ← Voltar para Lista de Gastos
+    </a>
+  </div>
+
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4 text-center">Gráfico de Pizza</h2>
+      <canvas id="pizzaChart"></canvas>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4 text-center">Gráfico de Barras</h2>
+      <canvas id="barraChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+  firebase.auth().onAuthStateChanged(async (user) => {
+    if (!user) {
+      alert("Usuário não autenticado. Faça login novamente.");
+      window.location.href = "/login.html";
+      return;
+    }
+
+    const token = await user.getIdToken(true);
+    localStorage.setItem("token", token);
+    carregarDados(token);
+  });
+
+  async function carregarDados(token) {
+    try {
+      const response = await fetch("/api/gastos", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+
+      if (!response.ok) {
+        alert("Erro ao buscar dados para ranking");
+        return;
+      }
+
+      const gastos = await response.json();
+      const ranking = agruparPorCategoria(gastos);
+      desenharGraficos(ranking);
+    } catch (error) {
+      alert("Erro ao carregar ranking: " + error.message);
+    }
+  }
+
+  function agruparPorCategoria(gastos) {
+    const somaPorCategoria = {};
+    for (const gasto of gastos) {
+      if (!somaPorCategoria[gasto.categoria]) {
+        somaPorCategoria[gasto.categoria] = 0;
+      }
+      somaPorCategoria[gasto.categoria] += parseFloat(gasto.valor);
+    }
+    return somaPorCategoria;
+  }
+
+  function desenharGraficos(dados) {
+    const categorias = Object.keys(dados);
+    const valores = Object.values(dados);
+    const cores = categorias.map(() => `hsl(${Math.random() * 360}, 70%, 60%)`);
+
+    new Chart(document.getElementById("pizzaChart"), {
+      type: "pie",
+      data: {
+        labels: categorias,
+        datasets: [{
+          data: valores,
+          backgroundColor: cores
+        }]
+      }
+    });
+
+    new Chart(document.getElementById("barraChart"), {
+      type: "bar",
+      data: {
+        labels: categorias,
+        datasets: [{
+          label: "Total por Categoria (R$)",
+          data: valores,
+          backgroundColor: cores
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => 'R$ ' + value.toFixed(2)
+            }
+          }
+        }
+      }
+    });
+  }
+</script>
+</body>
+</html>

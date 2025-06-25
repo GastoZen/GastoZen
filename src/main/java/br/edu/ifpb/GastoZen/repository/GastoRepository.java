@@ -47,7 +47,6 @@ public class GastoRepository {
     public List<Gasto> findByUserId(String userId) throws ExecutionException, InterruptedException {
         ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
                 .whereEqualTo("userId", userId)
-                .orderBy("data", Query.Direction.DESCENDING)
                 .get();
 
         List<Gasto> gastos = new ArrayList<>();
@@ -67,9 +66,7 @@ public class GastoRepository {
     }
 
     public List<Gasto> findAll() throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
-                .orderBy("data", Query.Direction.DESCENDING)
-                .get();
+        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).get();
 
         List<Gasto> gastos = new ArrayList<>();
         QuerySnapshot querySnapshot = future.get();

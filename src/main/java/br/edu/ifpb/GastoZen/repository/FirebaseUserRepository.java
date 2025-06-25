@@ -36,6 +36,24 @@ public class FirebaseUserRepository implements UserRepository {
             throw new RuntimeException("Error saving user", e);
         }
     }
+    @Override
+    public User update(User user) {
+        // não checa exists(), simplesmente sobrescreve
+        return setDocument(user);
+    }
+
+    private User setDocument(User user) {
+        try {
+            DocumentReference docRef = firestore
+                    .collection(COLLECTION_NAME)
+                    .document(user.getEmail());
+            ApiFuture<WriteResult> future = docRef.set(user);
+            future.get();
+            return user;
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Error writing user document", e);
+        }
+    }
 
     public Optional<User> findByEmail(String email) {
         try {

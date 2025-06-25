@@ -6,8 +6,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,10 +21,7 @@ public class GastoController {
         this.gastoService = gastoService;
     }
 
-    private String getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName();
-    }
+
 
     @PostMapping
     public ResponseEntity<?> cadastrarGasto(
@@ -55,54 +51,135 @@ public class GastoController {
 
 
     @GetMapping
-    public ResponseEntity<List<Gasto>> listarGastos() {
+    public ResponseEntity<?> listarGastos(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader) {
+        
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
+        }
+
+        String idToken = authorizationHeader.substring(7);
         try {
-            List<Gasto> gastos = gastoService.listarGastosDoUsuario(getCurrentUserId());
-            return new ResponseEntity<>(gastos, HttpStatus.OK);
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String userId = decodedToken.getUid();
+            
+            List<Gasto> gastos = gastoService.listarGastosDoUsuario(userId);
+            return ResponseEntity.ok(gastos);
+            
         } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao carregar gastos: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
         }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Gasto> buscarGasto(@PathVariable String id) {
+    public ResponseEntity<?> buscarGasto(
+            @PathVariable String id,
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader) {
+        
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
+        }
+
+        String idToken = authorizationHeader.substring(7);
         try {
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String userId = decodedToken.getUid();
+            
             return gastoService.buscarGasto(id)
                     .map(gasto -> {
-                        if (!gasto.getUserId().equals(getCurrentUserId())) {
-                            return new ResponseEntity<Gasto>(HttpStatus.FORBIDDEN);
+                        if (!gasto.getUserId().equals(userId)) {
+                            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usuário não autorizado");
                         }
-                        return new ResponseEntity<>(gasto, HttpStatus.OK);
+                        return ResponseEntity.ok(gasto);
                     })
-                    .orElse(new ResponseEntity<Gasto>(HttpStatus.NOT_FOUND));
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Gasto não encontrado"));
+                    
         } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao buscar gasto: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Gasto> atualizarGasto(@PathVariable String id, @RequestBody Gasto gasto) {
+    public ResponseEntity<?> atualizarGasto(
+            @PathVariable String id,
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
+            @RequestBody Gasto gasto) {
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
+        }
+
+        String idToken = authorizationHeader.substring(7);
         try {
-            Gasto gastoAtualizado = gastoService.atualizarGasto(id, gasto, getCurrentUserId());
-            return new ResponseEntity<>(gastoAtualizado, HttpStatus.OK);
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String userId = decodedToken.getUid();
+
+            Gasto gastoAtualizado = gastoService.atualizarGasto(id, gasto, userId);
+            return ResponseEntity.ok(gastoAtualizado);
+
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Erro de validação: " + e.getMessage());
         } catch (IllegalStateException e) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usuário não autorizado");
         } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar gasto: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarGasto(@PathVariable String id) {
+    public ResponseEntity<?> deletarGasto(
+            @PathVariable String id,
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader) {
+        
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
+        }
+
+        String idToken = authorizationHeader.substring(7);
         try {
-            gastoService.deletarGasto(id, getCurrentUserId());
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String userId = decodedToken.getUid();
+            
+            gastoService.deletarGasto(id, userId);
+            return ResponseEntity.noContent().build();
+            
         } catch (IllegalStateException e) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usuário não autorizado");
         } catch (ExecutionException | InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao deletar gasto: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
         }
     }
+
+    @GetMapping("/ranking")
+    public ResponseEntity<?> rankingPorCategoria(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader) {
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
+        }
+
+        String idToken = authorizationHeader.substring(7);
+        try {
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String userId = decodedToken.getUid();
+
+            // Chama o serviço que calcula o ranking
+            var ranking = gastoService.calcularRankingPorCategoria(userId);
+            return ResponseEntity.ok(ranking);
+
+        } catch (ExecutionException | InterruptedException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao gerar ranking: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido: " + e.getMessage());
+        }
+    }
+
 }
