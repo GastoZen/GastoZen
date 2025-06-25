@@ -11,4 +11,6 @@ public class RegisterRequest {
     private double salary;
     private String phone;
     private String occupation;
+    private Integer securityQuestionId;
+    private String securityAnswer;
 }
