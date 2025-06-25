@@ -31,8 +31,7 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Value("${app.url.reset-completo}")
-    private String resetUrlBase;
+
 
     public LoginResponse login(LoginRequest request) throws FirebaseAuthException {
         try {
