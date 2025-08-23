@@ -4,8 +4,13 @@ import br.edu.ifpb.GastoZen.model.Gasto;
 import br.edu.ifpb.GastoZen.repository.GastoRepository;
 import com.google.cloud.Timestamp;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -102,6 +107,64 @@ public class GastoService {
                         Collectors.reducing(BigDecimal.ZERO, Gasto::getValor, BigDecimal::add)
                 ));
     }
+
+    public int importarGastosCSV(MultipartFile arquivo, String userId, String banco)
+            throws IOException, ExecutionException, InterruptedException {
+
+        // Lê o arquivo usando UTF-8 (para evitar problemas de acentuação)
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(arquivo.getInputStream(), StandardCharsets.UTF_8));
+        List<String> linhas = reader.lines().toList();
+
+        if (linhas.size() <= 2) return 0; // sem transações
+
+        // A segunda linha (índice 1) é o cabeçalho, dados começam na linha 2
+        List<String> dados = linhas.subList(2, linhas.size());
+
+        int count = 0;
+        DateTimeFormatter formatterEntrada = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+        for (String linha : dados) {
+            String[] colunas = linha.split(";");
+            if (colunas.length < 2) continue;
+
+            String dataStr = colunas[0].trim();          // RELEASE_DATE
+            String descricao = colunas[1].trim();        // TRANSACTION_TYPE
+
+            // Normaliza encoding (opcional: remove caracteres estranhos)
+            descricao = new String(descricao.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+
+            // Filtrar apenas tipos que são gastos
+            if (!(descricao.startsWith("Pagamento com QR Pix")
+                    || descricao.startsWith("Transferência Pix enviada") // já decodificado corretamente
+                    || descricao.startsWith("TransferÃªncia Pix enviada") // fallback caso encoding venha quebrado
+                    || descricao.startsWith("Pagamento")
+                    || descricao.startsWith("Pagamento de contas"))) {
+                continue; // ignora outras transações (ex.: recebimentos, rendimentos)
+            }
+
+            // Campo de valor: normalmente o penúltimo ou último campo, vamos assumir penúltimo (débitos)
+            String valorStr = colunas[colunas.length - 2].trim().replace(",", ".");
+            if (valorStr.isEmpty()) continue;
+
+            try {
+                BigDecimal valor = new BigDecimal(valorStr.replaceAll("[^0-9.-]", "")); // remove caracteres não numéricos
+                valor = valor.abs(); // registra sempre positivo
+
+                // Converter data para ISO yyyy-MM-dd
+                LocalDate dataFormatada = LocalDate.parse(dataStr, formatterEntrada);
+
+                Gasto gasto = new Gasto(userId, valor, dataFormatada.toString(), descricao, "Outros");
+                cadastrarGasto(gasto, userId);
+                count++;
+            } catch (Exception e) {
+                // ignora linha inválida, mas logaria se necessário
+            }
+        }
+
+        return count;
+    }
+
 
 
 }

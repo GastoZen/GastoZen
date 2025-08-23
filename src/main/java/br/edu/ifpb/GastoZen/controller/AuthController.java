@@ -67,4 +67,10 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/ping")
+    public String ping() {
+        return "API está viva!";
+    }
+
+
 }

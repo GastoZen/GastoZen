@@ -24,6 +24,9 @@
     <a href="gastos.html" class="bg-blue-600 text-white px-6 py-3 rounded-lg shadow hover:bg-blue-700 transition duration-200">
       + Novo Gasto
     </a>
+    <a href="importar.html" class="bg-purple-600 text-white px-6 py-3 rounded-lg shadow hover:bg-purple-700 transition duration-200">
+      📂 Importar Gastos
+    </a>
     <a href="ranking.html" class="bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-lg shadow hover:bg-blue-50 transition duration-200">
       📊 Ver Ranking
     </a>
@@ -119,7 +122,6 @@
   async function carregarGastos() {
     const token = localStorage.getItem("token");
 
-    // Captura filtros e ordenação
     const categoriaFiltro = document.getElementById("filtro-categoria").value;
     const dataInicio = document.getElementById("filtro-inicio").value;
     const dataFim = document.getElementById("filtro-fim").value;
@@ -133,7 +135,6 @@
       if (response.ok) {
         let gastos = await response.json();
 
-        // Aplica filtros
         if (categoriaFiltro) {
           gastos = gastos.filter(g => g.categoria === categoriaFiltro);
         }
@@ -144,7 +145,6 @@
           gastos = gastos.filter(g => new Date(g.data) <= new Date(dataFim));
         }
 
-        // Aplica ordenação
         if (ordenarPor === 'valor') {
           gastos.sort((a, b) => b.valor - a.valor);
         } else if (ordenarPor === 'data') {
@@ -156,9 +156,12 @@
         alert("Erro ao carregar gastos");
       }
     } catch (error) {
-      alert("Erro ao carregar gastos: " + error.message);
+      // Ignora erro de navegação e outros "abort" da troca de página
+      console.warn("Erro ao carregar gastos (ignorado):", error.message);
     }
   }
+
+
 
   function exibirGastos(gastos) {
     const lista = document.getElementById("gastos-lista");
