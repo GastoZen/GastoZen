@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 
 @Service
 public class GastoService {
@@ -108,6 +110,15 @@ public class GastoService {
                 ));
     }
 
+    public int importarGastos(MultipartFile arquivo, String userId, String banco, String formato)
+            throws IOException, ExecutionException, InterruptedException {
+        if ("pdf".equalsIgnoreCase(formato)) {
+            return importarGastosPDF(arquivo, userId, banco);
+        }
+        return importarGastosCSV(arquivo, userId, banco);
+
+    }
+
     public int importarGastosCSV(MultipartFile arquivo, String userId, String banco)
             throws IOException, ExecutionException, InterruptedException {
 
@@ -159,6 +170,67 @@ public class GastoService {
                 count++;
             } catch (Exception e) {
                 // ignora linha inválida, mas logaria se necessário
+            }
+        }
+
+        return count;
+    }
+
+    public int importarGastosPDF(MultipartFile arquivo, String userId, String banco)
+            throws IOException, ExecutionException, InterruptedException {
+
+        // Lê o PDF
+        PDDocument document = PDDocument.load(arquivo.getInputStream());
+        PDFTextStripper stripper = new PDFTextStripper();
+        String texto = stripper.getText(document);
+        document.close();
+
+        // Quebra o conteúdo em linhas
+        List<String> linhas = texto.lines().toList();
+
+        if (linhas.size() <= 2) return 0; // sem transações
+
+        // Assume que a primeira ou segunda linha seja cabeçalho, como no CSV
+        List<String> dados = linhas.subList(2, linhas.size());
+
+        int count = 0;
+        DateTimeFormatter formatterEntrada = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+        for (String linha : dados) {
+            // No PDF pode estar separado por múltiplos espaços, então usamos regex
+            String[] colunas = linha.split("\\s{2,}");
+            if (colunas.length < 2) continue;
+
+            String dataStr = colunas[0].trim();       // Data
+            String descricao = colunas[1].trim();     // Descrição
+
+            // Normaliza encoding
+            descricao = new String(descricao.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+
+            // Filtrar apenas tipos que são gastos
+            if (!(descricao.startsWith("Pagamento com QR Pix")
+                    || descricao.startsWith("Transferência Pix enviada")
+                    || descricao.startsWith("Pagamento")
+                    || descricao.startsWith("Pagamento de contas"))) {
+                continue; // ignora outras transações
+            }
+
+            // O valor no PDF pode ser a última coluna
+            String valorStr = colunas[colunas.length - 1].trim().replace(",", ".");
+            if (valorStr.isEmpty()) continue;
+
+            try {
+                BigDecimal valor = new BigDecimal(valorStr.replaceAll("[^0-9.-]", ""));
+                valor = valor.abs();
+
+                // Converter data para ISO yyyy-MM-dd
+                LocalDate dataFormatada = LocalDate.parse(dataStr, formatterEntrada);
+
+                Gasto gasto = new Gasto(userId, valor, dataFormatada.toString(), descricao, "Outros");
+                cadastrarGasto(gasto, userId);
+                count++;
+            } catch (Exception e) {
+                // ignora linha inválida
             }
         }
 

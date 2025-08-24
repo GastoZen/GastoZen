@@ -24,7 +24,15 @@
         <div class="mb-4">
             <label class="block font-semibold">Formato de Arquivo</label>
             <div class="flex gap-4 mt-2">
-                <button disabled class="bg-gray-400 text-white px-4 py-2 rounded">PDF (indisponível)</button>
+                <label>
+                    <input type="radio" name="formato" value="csv" checked>
+                    <span class="ml-1">CSV</span>
+                </label>
+                <label>
+                    <input type="radio" name="formato" value="pdf">
+                    <span class="ml-1">PDF</span>
+                </label>
+                <button class="bg-gray-400 text-white px-4 py-2 rounded">PDF (indisponível)</button>
                 <button class="bg-green-600 text-white px-4 py-2 rounded cursor-not-allowed">CSV (ativo)</button>
             </div>
         </div>
@@ -33,6 +41,7 @@
             <label class="block font-semibold">Banco</label>
             <select id="banco" class="w-full p-2 border rounded">
                 <option value="mercado_pago">Mercado Pago</option>
+                <option value="nubank">Nubank</option>
             </select>
         </div>
 
@@ -63,7 +72,7 @@
         const banco = document.getElementById("banco").value;
 
         if (!arquivo) {
-            alert("Selecione um arquivo CSV");
+            alert("Selecione um arquivo CSV ou PDF");
             return;
         }
 
