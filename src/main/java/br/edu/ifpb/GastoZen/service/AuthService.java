@@ -3,6 +3,7 @@ package br.edu.ifpb.GastoZen.service;
 import br.edu.ifpb.GastoZen.dto.LoginRequest;
 import br.edu.ifpb.GastoZen.dto.LoginResponse;
 import br.edu.ifpb.GastoZen.dto.RegisterRequest;
+import br.edu.ifpb.GastoZen.dto.ResetViaQuestionarioRequest;
 import br.edu.ifpb.GastoZen.model.User;
 import br.edu.ifpb.GastoZen.repository.UserRepository;
 import com.google.firebase.auth.FirebaseAuth;
@@ -10,7 +11,14 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.google.firebase.auth.UserRecord.CreateRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.google.firebase.auth.ActionCodeSettings;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 import java.util.Optional;
 
@@ -19,6 +27,11 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+
 
     public LoginResponse login(LoginRequest request) throws FirebaseAuthException {
         try {
@@ -77,35 +90,34 @@ public class AuthService {
     public User register(RegisterRequest request) throws FirebaseAuthException {
         validateUserData(request);
 
-        try {
-            if (userRepository.exists(request.getEmail())) {
-                throw new IllegalArgumentException("User with this email already exists");
-            }
-
-            CreateRequest createRequest = new CreateRequest()
-                    .setEmail(request.getEmail())
-                    .setPassword(request.getPassword())
-                    .setDisplayName(request.getName())
-                    .setEmailVerified(false);
-
-            UserRecord userRecord = FirebaseAuth.getInstance().createUser(createRequest);
-
-            User user = new User(
-                    userRecord.getUid(),
-                    userRecord.getEmail(),
-                    request.getName(),
-                    request.getAge(),
-                    request.getSalary(),
-                    request.getPhone(),
-                    request.getOccupation()
-            );
-
-            userRepository.save(user);
-
-            return user;
-        } catch (FirebaseAuthException e) {
-            throw new FirebaseAuthException(e.getErrorCode(), "Registration failed: " + e.getMessage(), e, null, null);
+        if (userRepository.exists(request.getEmail())) {
+            throw new IllegalArgumentException("User with email already exists");
         }
+
+        // cria o usuário no Firebase
+        UserRecord userRecord = FirebaseAuth.getInstance()
+                .createUser(new CreateRequest()
+                        .setEmail(request.getEmail())
+                        .setPassword(request.getPassword())
+                        .setDisplayName(request.getName()));
+
+        // monta o objeto User local com pergunta/ resposta
+        User user = new User(
+                userRecord.getUid(),
+                userRecord.getEmail(),
+                request.getName(),
+                request.getAge(),
+                request.getSalary(),
+                request.getPhone(),
+                request.getOccupation(),
+                request.getSecurityQuestionId(),
+                // opcional: já pode hashear a resposta aqui assim:
+                // passwordEncoder.encode(request.getSecurityAnswer().trim().toLowerCase())
+                request.getSecurityAnswer().trim()
+        );
+
+        userRepository.save(user);
+        return user;
     }
 
     private void validateUserData(RegisterRequest request) {
@@ -131,4 +143,39 @@ public class AuthService {
             throw new IllegalArgumentException("Occupation cannot be empty");
         }
     }
+    public boolean resetarSenhaPorQuestionario(ResetViaQuestionarioRequest req) {
+        Optional<User> opt = userRepository.findByEmail(req.getEmail());
+        if (opt.isEmpty()) {
+            return false;
+        }
+        User user = opt.get();
+
+        if (!user.getSecurityQuestionId().equals(req.getQuestionId())
+                || !user.getSecurityAnswer().equalsIgnoreCase(req.getAnswer().trim())) {
+            return false;
+        }
+
+        try {
+            // atualiza senha no Firebase
+            FirebaseAuth.getInstance().updateUser(
+                    new UserRecord.UpdateRequest(user.getUid())
+                            .setPassword(req.getNewPassword())
+            );
+
+            // limpar resposta de segurança e atualizar o documento
+            user.setSecurityAnswer(null);
+            userRepository.update(user);    // <— chama update(), não save()
+
+            return true;
+        } catch (FirebaseAuthException e) {
+            return false;
+        }
+    }
+
+
+
+
+
+
+
 }

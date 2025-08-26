@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Recuperar Senha – GastoZen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        async function recuperarSenha(event) {
+            event.preventDefault();
+            const payload = {
+                email: document.getElementById("email").value,
+                questionId: document.getElementById("question").value,
+                answer: document.getElementById("answer").value,
+                newPassword: document.getElementById("newPassword").value,
+                confirmPassword: document.getElementById("confirmPassword").value
+            };
+
+            if (payload.newPassword !== payload.confirmPassword) {
+                return alert("As senhas não conferem.");
+            }
+
+            try {
+                const res = await fetch("/api/auth/reset-via-questionario", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const text = await res.text();
+                if (res.ok) {
+                    alert("Senha redefinida com sucesso!");
+                    window.location.href = "/login.html";
+                } else {
+                    alert("Erro: " + text);
+                }
+            } catch (e) {
+                alert("Erro inesperado: " + e.message);
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+<form onsubmit="recuperarSenha(event)"
+      class="bg-white p-8 rounded shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Recuperar Senha</h2>
+
+    <input id="email" type="email" placeholder="Seu e-mail" required
+           class="w-full p-2 border rounded mb-4" />
+
+    <select id="question" required class="w-full p-2 border rounded mb-4">
+        <option value="">Selecione a pergunta</option>
+        <option value="1">Qual o nome do seu primeiro pet?</option>
+        <option value="2">Em que cidade você nasceu?</option>
+        <option value="3">Qual seu livro favorito?</option>
+        <!-- adicione quantas perguntas quiser -->
+    </select>
+
+    <input id="answer" type="text" placeholder="Sua resposta" required
+           class="w-full p-2 border rounded mb-4" />
+
+    <input id="newPassword" type="password" placeholder="Nova senha" required
+           class="w-full p-2 border rounded mb-4" />
+    <input id="confirmPassword" type="password" placeholder="Confirme a nova senha" required
+           class="w-full p-2 border rounded mb-6" />
+
+    <button type="submit"
+            class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+        Redefinir Senha
+    </button>
+</form>
+</body>
+</html>

@@ -1,8 +1,6 @@
 package br.edu.ifpb.GastoZen.controller;
 
-import br.edu.ifpb.GastoZen.dto.LoginRequest;
-import br.edu.ifpb.GastoZen.dto.LoginResponse;
-import br.edu.ifpb.GastoZen.dto.RegisterRequest;
+import br.edu.ifpb.GastoZen.dto.*;
 import br.edu.ifpb.GastoZen.model.User;
 import br.edu.ifpb.GastoZen.service.AuthService;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -55,4 +53,24 @@ public class AuthController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping("/reset-via-questionario")
+    public ResponseEntity<String> resetViaQuestionario(
+            @RequestBody ResetViaQuestionarioRequest req) {
+        boolean ok = authService.resetarSenhaPorQuestionario(req);
+        if (ok) {
+            return ResponseEntity.ok("Senha redefinida com sucesso.");
+        } else {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Email, pergunta ou resposta inválidos.");
+        }
+    }
+
+    @GetMapping("/ping")
+    public String ping() {
+        return "API está viva!";
+    }
+
+
 }

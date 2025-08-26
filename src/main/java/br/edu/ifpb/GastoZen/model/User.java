@@ -13,6 +13,8 @@ public class User {
     private double salary;
     private String phone;
     private String occupation;
+    private Integer securityQuestionId;
+    private String securityAnswer;
 
     public User(String uid, String email, String name) {
         this.uid = uid;
@@ -20,7 +22,10 @@ public class User {
         this.name = name;
     }
 
-    public User(String uid, String email, String name, int age, double salary, String phone, String occupation) {
+    public User(String uid, String email, String name,
+                int age, double salary, String phone,
+                String occupation,
+                Integer securityQuestionId, String securityAnswer) {
         this.uid = uid;
         this.email = email;
         this.name = name;
@@ -28,5 +33,7 @@ public class User {
         this.salary = salary;
         this.phone = phone;
         this.occupation = occupation;
+        this.securityQuestionId = securityQuestionId;
+        this.securityAnswer = securityAnswer;
     }
 }

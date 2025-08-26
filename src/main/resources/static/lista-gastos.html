@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista de Gastos - GastoZen</title>
+  <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-auth-compat.js"></script>
+  <script src="session-manager.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwOY4exdZ-YAJfaluMcqKHSpZcV2V7iAU",
+      authDomain: "gastozen-24e09.firebaseapp.com",
+      projectId: "gastozen-24e09"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div class="container mx-auto p-6">
+  <h1 class="text-4xl font-bold mb-8 text-center text-blue-800">Meus Gastos</h1>
+
+  <div class="flex justify-center gap-4 mb-8">
+    <a href="gastos.html" class="bg-blue-600 text-white px-6 py-3 rounded-lg shadow hover:bg-blue-700 transition duration-200">
+      + Novo Gasto
+    </a>
+    <a href="importar.html" class="bg-purple-600 text-white px-6 py-3 rounded-lg shadow hover:bg-purple-700 transition duration-200">
+      📂 Importar Gastos
+    </a>
+    <a href="ranking.html" class="bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-lg shadow hover:bg-blue-50 transition duration-200">
+      📊 Ver Ranking
+    </a>
+    <a href="relatorio.html" class="bg-white text-green-600 border border-green-600 px-6 py-3 rounded-lg shadow hover:bg-green-50 transition duration-200">
+      📑 Ver Relatório
+    </a>
+  </div>
+
+  <!-- Filtros e Ordenação -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <select id="filtro-categoria" class="p-2 border rounded">
+        <option value="">Todas as Categorias</option>
+        <option value="Alimentação">Alimentação</option>
+        <option value="Transporte">Transporte</option>
+        <option value="Lazer">Lazer</option>
+        <option value="Educação">Educação</option>
+        <option value="Saúde">Saúde</option>
+        <option value="Moradia">Moradia</option>
+        <option value="Assinaturas">Assinaturas</option>
+        <option value="Outros">Outros</option>
+      </select>
+      <input type="date" id="filtro-inicio" class="p-2 border rounded" placeholder="Data início">
+      <input type="date" id="filtro-fim" class="p-2 border rounded" placeholder="Data fim">
+      <select id="ordenar-por" class="p-2 border rounded">
+        <option value="">Ordenar por</option>
+        <option value="data">Data</option>
+        <option value="valor">Valor</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="gastos-lista" class="space-y-4"></div>
+</div>
+
+<!-- Modal de Edição -->
+<div id="modal-edicao" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+  <div class="bg-white p-6 rounded-lg w-full max-w-md">
+    <h2 class="text-xl font-bold mb-4">Editar Gasto</h2>
+    <form id="form-edicao">
+      <input type="hidden" id="edit-id">
+      <div class="mb-4">
+        <label class="block text-sm font-medium">Descrição</label>
+        <input type="text" id="edit-descricao" required class="mt-1 p-2 w-full border rounded">
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium">Valor (R$)</label>
+        <input type="number" id="edit-valor" step="0.01" min="0.01" required class="mt-1 p-2 w-full border rounded">
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium">Data</label>
+        <input type="date" id="edit-data" required class="mt-1 p-2 w-full border rounded">
+      </div>
+      <div class="mb-6">
+        <label class="block text-sm font-medium">Categoria</label>
+        <select id="edit-categoria" required class="mt-1 p-2 w-full border rounded">
+          <option value="Alimentação">Alimentação</option>
+          <option value="Transporte">Transporte</option>
+          <option value="Lazer">Lazer</option>
+          <option value="Educação">Educação</option>
+          <option value="Saúde">Saúde</option>
+          <option value="Moradia">Moradia</option>
+          <option value="Assinaturas">Assinaturas</option>
+          <option value="Outros">Outros</option>
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex-1">
+          Salvar
+        </button>
+        <button type="button" onclick="fecharModal()" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 flex-1">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  firebase.auth().onAuthStateChanged(async (user) => {
+    if (!user || !sessionManager.isSessionValid()) {
+      alert("Usuário não autenticado. Faça login novamente.");
+      window.location.href = "/login.html";
+      return;
+    }
+
+    const idToken = await user.getIdToken(true);
+    localStorage.setItem("token", idToken);
+    sessionManager.updateLastActivity();
+    carregarGastos();
+  });
+
+  async function carregarGastos() {
+    const token = localStorage.getItem("token");
+
+    const categoriaFiltro = document.getElementById("filtro-categoria").value;
+    const dataInicio = document.getElementById("filtro-inicio").value;
+    const dataFim = document.getElementById("filtro-fim").value;
+    const ordenarPor = document.getElementById("ordenar-por").value;
+
+    try {
+      const response = await fetch("/api/gastos", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+
+      if (response.ok) {
+        let gastos = await response.json();
+
+        if (categoriaFiltro) {
+          gastos = gastos.filter(g => g.categoria === categoriaFiltro);
+        }
+        if (dataInicio) {
+          gastos = gastos.filter(g => new Date(g.data) >= new Date(dataInicio));
+        }
+        if (dataFim) {
+          gastos = gastos.filter(g => new Date(g.data) <= new Date(dataFim));
+        }
+
+        if (ordenarPor === 'valor') {
+          gastos.sort((a, b) => b.valor - a.valor);
+        } else if (ordenarPor === 'data') {
+          gastos.sort((a, b) => new Date(b.data) - new Date(a.data));
+        }
+
+        exibirGastos(gastos);
+      } else {
+        alert("Erro ao carregar gastos");
+      }
+    } catch (error) {
+      // Ignora erro de navegação e outros "abort" da troca de página
+      console.warn("Erro ao carregar gastos (ignorado):", error.message);
+    }
+  }
+
+
+
+  function exibirGastos(gastos) {
+    const lista = document.getElementById("gastos-lista");
+    if (gastos.length === 0) {
+      lista.innerHTML = '<p class="text-center text-gray-500">Nenhum gasto cadastrado</p>';
+      return;
+    }
+    lista.innerHTML = gastos.map(gasto => `
+        <div class="bg-white p-4 rounded shadow">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-semibold">${gasto.descricao}</h3>
+              <p class="text-gray-600">Categoria: ${gasto.categoria}</p>
+              <p class="text-gray-600">Data: ${new Date(gasto.data).toLocaleDateString('pt-BR')}</p>
+              <p class="text-lg font-bold text-green-600">R$ ${parseFloat(gasto.valor).toFixed(2)}</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="editarGasto('${gasto.id}')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Editar</button>
+              <button onclick="excluirGasto('${gasto.id}')" class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">Excluir</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+  }
+
+  // Eventos de filtro/ordenação para atualização automática
+  document.getElementById("filtro-categoria").addEventListener("change", carregarGastos);
+  document.getElementById("filtro-inicio").addEventListener("change", carregarGastos);
+  document.getElementById("filtro-fim").addEventListener("change", carregarGastos);
+  document.getElementById("ordenar-por").addEventListener("change", carregarGastos);
+
+  async function editarGasto(id) {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`/api/gastos/${id}`, {
+        headers: { "Authorization": "Bearer " + token }
+      });
+      if (response.ok) {
+        const gasto = await response.json();
+        document.getElementById("edit-id").value = gasto.id;
+        document.getElementById("edit-descricao").value = gasto.descricao;
+        document.getElementById("edit-valor").value = gasto.valor;
+        document.getElementById("edit-data").value = gasto.data;
+        document.getElementById("edit-categoria").value = gasto.categoria;
+        document.getElementById("modal-edicao").classList.remove("hidden");
+      } else {
+        alert("Erro ao carregar dados do gasto");
+      }
+    } catch (error) {
+      alert("Erro: " + error.message);
+    }
+  }
+
+  function fecharModal() {
+    document.getElementById("modal-edicao").classList.add("hidden");
+  }
+
+  document.getElementById("form-edicao").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    const id = document.getElementById("edit-id").value;
+    const gastoAtualizado = {
+      descricao: document.getElementById("edit-descricao").value,
+      valor: parseFloat(document.getElementById("edit-valor").value),
+      data: document.getElementById("edit-data").value,
+      categoria: document.getElementById("edit-categoria").value
+    };
+    try {
+      const response = await fetch(`/api/gastos/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(gastoAtualizado)
+      });
+      if (response.ok) {
+        alert("Gasto atualizado com sucesso!");
+        fecharModal();
+        carregarGastos();
+      } else {
+        const msg = await response.text();
+        alert("Erro ao atualizar gasto: " + msg);
+      }
+    } catch (error) {
+      alert("Erro: " + error.message);
+    }
+  });
+
+  async function excluirGasto(id) {
+    if (!confirm("Tem certeza que deseja excluir este gasto?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`/api/gastos/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": "Bearer " + token }
+      });
+      if (response.ok) {
+        alert("Gasto excluído com sucesso!");
+        carregarGastos();
+      } else {
+        alert("Erro ao excluir gasto");
+      }
+    } catch (error) {
+      alert("Erro: " + error.message);
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Gastos – GastoZen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF para exportar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div class="container mx-auto p-6">
+    <h1 class="text-4xl font-bold mb-8 text-center text-blue-800">Relatório de Gastos por Categoria</h1>
+
+    <!-- Totais por categoria -->
+    <div id="totais-categorias" class="mb-8 space-y-2 max-w-xl mx-auto">
+        <!-- Será preenchido dinamicamente -->
+    </div>
+
+    <!-- Gráfico -->
+    <div class="bg-white p-4 rounded shadow mb-8 max-w-xl mx-auto">
+        <canvas id="grafico-categorias" class="w-full h-64"></canvas>
+    </div>
+
+    <!-- Botão de exportação -->
+    <div class="text-center">
+        <button id="btn-export-pdf"
+                class="bg-indigo-600 text-white px-6 py-3 rounded-lg shadow hover:bg-indigo-700 transition duration-200">
+            📄 Exportar PDF
+        </button>
+    </div>
+</div>
+
+<script>
+    async function carregarRelatorio() {
+        const token = localStorage.getItem('token');
+        const resp = await fetch('/api/relatorio/categorias', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!resp.ok) {
+            alert('Erro ao carregar relatório');
+            return;
+        }
+        const dados = await resp.json();
+
+        // Exibe totais na tela
+        const container = document.getElementById('totais-categorias');
+        container.innerHTML = dados.map(d =>
+            `<p class="text-lg"><strong>${d.categoria}:</strong> R$ ${parseFloat(d.total).toFixed(2)}</p>`
+        ).join('');
+
+        // Monta gráfico de pizza com tamanho definido
+        const ctx = document.getElementById('grafico-categorias').getContext('2d');
+        if (window.chartRelatorio) window.chartRelatorio.destroy();
+        window.chartRelatorio = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: dados.map(d => d.categoria),
+                datasets: [{ data: dados.map(d => d.total) }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    // Configura exportação PDF
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarRelatorio();
+        document.getElementById('btn-export-pdf').addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(16);
+            doc.text('Relatório de Gastos por Categoria', 14, 20);
+
+            let y = 30;
+            const linhaAltura = 8;
+            const dados = JSON.parse(sessionStorage.getItem('relatorioDados') || '[]');
+            if (dados.length === 0) {
+                alert('Nenhum dado para exportar');
+                return;
+            }
+
+            // Totais
+            dados.forEach(d => {
+                doc.setFontSize(12);
+                doc.text(`${d.categoria}: R$ ${parseFloat(d.total).toFixed(2)}`, 14, y);
+                y += linhaAltura;
+            });
+
+            // Gráfico como imagem
+            const canvas = document.getElementById('grafico-categorias');
+            const imgData = canvas.toDataURL('image/png');
+            doc.addImage(imgData, 'PNG', 15, y + 10, 180, 80);
+
+            doc.save('relatorio_gastos.pdf');
+        });
+    });
+
+    // Armazena dados para exportação
+    (async () => {
+        const token = localStorage.getItem('token');
+        const resp = await fetch('/api/relatorio/categorias', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (resp.ok) {
+            const dados = await resp.json();
+            sessionStorage.setItem('relatorioDados', JSON.stringify(dados));
+        }
+    })();
+</script>
+</body>
+</html>

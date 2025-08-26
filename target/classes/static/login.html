@@ -54,6 +54,8 @@
 
                 // 4. Salva o ID token no localStorage
                 localStorage.setItem("token", idToken);
+                localStorage.setItem("loginTime", Date.now().toString());
+                localStorage.setItem("lastActivity", Date.now().toString());
 
                 messageDiv.innerText = "Login realizado com sucesso! Redirecionando...";
                 messageDiv.className = "text-green-600 font-semibold mt-4 text-center animate-pulse";
@@ -86,6 +88,11 @@
     <p class="mt-4 text-center text-sm">
         Não tem conta?
         <a href="/register.html" class="text-blue-600 hover:underline">Cadastre-se</a>
+    </p>
+    <p class="mt-2 text-center text-sm">
+        <a href="/recuperar-senha.html" class="text-blue-600 hover:underline">
+            Esqueci minha senha
+        </a>
     </p>
     <!-- Mensagem de status -->
     <div id="message"></div>

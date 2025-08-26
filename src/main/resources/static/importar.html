@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Importar Gastos - GastoZen</title>
+    <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-auth-compat.js"></script>
+    <script src="session-manager.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwOY4exdZ-YAJfaluMcqKHSpZcV2V7iAU",
+            authDomain: "gastozen-24e09.firebaseapp.com",
+            projectId: "gastozen-24e09"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div class="container mx-auto p-6">
+    <h1 class="text-4xl font-bold mb-8 text-center text-blue-800">Importar Gastos</h1>
+
+    <div class="bg-white p-6 rounded shadow max-w-lg mx-auto">
+        <div class="mb-4">
+            <label class="block font-semibold">Formato de Arquivo</label>
+            <div class="flex gap-4 mt-2">
+                <label>
+                    <input type="radio" name="formato" value="csv" checked>
+                    <span class="bg-green-600 text-white px-4 py-2 rounded">CSV</span>
+                </label>
+              <!--  <label>
+                    <input type="radio" name="formato" value="pdf">
+                    <span class="bg-green-600 text-white px-4 py-2 rounded">PDF</span>
+                </label>-->
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-semibold">Banco</label>
+            <select id="banco" class="w-full p-2 border rounded">
+                <option value="mercado_pago">Mercado Pago</option>
+            <!--<option value="nubank">Nubank</option>-->
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-semibold">Selecione o Arquivo</label>
+            <input type="file" id="arquivo" accept=".csv,.pdf" class="w-full p-2 border rounded">
+        </div>
+
+        <button id="btn-upload" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Importar
+        </button>
+    </div>
+</div>
+
+<script>
+    firebase.auth().onAuthStateChanged(user => {
+        if (!user || !sessionManager.isSessionValid()) {
+            alert("Usuário não autenticado. Faça login novamente.");
+            window.location.href = "/login.html";
+            return;
+        }
+        sessionManager.updateLastActivity();
+    });
+
+    document.getElementById("btn-upload").addEventListener("click", async () => {
+        const btn = document.getElementById("btn-upload");
+        const arquivo = document.getElementById("arquivo").files[0];
+        const banco = document.getElementById("banco").value;
+        const formato = document.querySelector('input[name="formato"]:checked').value;
+
+        if (!arquivo) {
+            alert("Selecione um arquivo CSV");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Importando...";
+
+        try {
+            const token = await firebase.auth().currentUser.getIdToken(true);
+            const formData = new FormData();
+            formData.append("arquivo", arquivo);
+            formData.append("banco", banco);
+            formData.append("formato", formato);
+
+            const response = await fetch("/api/importacao/upload", {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + token },
+                body: formData
+            });
+
+            if (response.ok) {
+                const msg = await response.text();
+                alert(msg);
+                window.location.href = "/lista-gastos.html";
+            } else {
+                alert("Erro: " + await response.text());
+            }
+        } catch (err) {
+            alert("Erro ao enviar arquivo: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Importar";
+        }
+    });
+
+
+</script>
+</body>
+</html>
