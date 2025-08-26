@@ -23,7 +23,8 @@ public class ImportacaoController {
     public ResponseEntity<?> uploadArquivo(
             @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
             @RequestParam("arquivo") MultipartFile arquivo,
-            @RequestParam("banco") String banco) {
+            @RequestParam("banco") String banco,
+            @RequestParam("formato") String formato) {
 
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido ou mal formatado.");
@@ -33,18 +34,13 @@ public class ImportacaoController {
             return ResponseEntity.badRequest().body("Nenhum arquivo enviado.");
         }
 
-        // CA1.1 – apenas CSV por enquanto
-        if (!arquivo.getOriginalFilename().toLowerCase().endsWith(".csv")) {
-            return ResponseEntity.badRequest().body("Formato inválido. Apenas CSV é aceito no momento.");
-        }
-
         try {
             String idToken = authorizationHeader.substring(7);
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
             String userId = decodedToken.getUid();
 
-            // CA1.2 e CA1.5 – analisar o CSV e inserir os gastos
-            int qtdImportada = gastoService.importarGastosCSV(arquivo, userId, banco);
+             // Chama o service que trata CSV e PDF
+            int qtdImportada = gastoService.importarGastos(arquivo, userId, banco, formato);
 
             return ResponseEntity.ok("Importação concluída com sucesso! " + qtdImportada + " registros importados.");
         } catch (Exception e) {

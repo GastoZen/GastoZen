@@ -122,54 +122,97 @@ public class GastoService {
     public int importarGastosCSV(MultipartFile arquivo, String userId, String banco)
             throws IOException, ExecutionException, InterruptedException {
 
-        // Lê o arquivo usando UTF-8 (para evitar problemas de acentuação)
         BufferedReader reader = new BufferedReader(
-                new InputStreamReader(arquivo.getInputStream(), StandardCharsets.UTF_8));
+            new InputStreamReader(arquivo.getInputStream(), StandardCharsets.UTF_8));
         List<String> linhas = reader.lines().toList();
 
-        if (linhas.size() <= 2) return 0; // sem transações
+        if (linhas.size() <= 1) return 0; // sem transações
+        
+        String cabecalho = linhas.get(0).toLowerCase();
 
-        // A segunda linha (índice 1) é o cabeçalho, dados começam na linha 2
-        List<String> dados = linhas.subList(2, linhas.size());
+        // remover cabeçalho
+        List<String> dados = linhas.subList(1, linhas.size());
 
         int count = 0;
-        DateTimeFormatter formatterEntrada = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+        DateTimeFormatter formatterNubank = DateTimeFormatter.ISO_LOCAL_DATE; // 2025-06-30
+        DateTimeFormatter formatterNubankAntigo = DateTimeFormatter.ofPattern("dd/MM/yyyy"); // 30/06/2025
+        DateTimeFormatter formatterMercadoPago = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
         for (String linha : dados) {
-            String[] colunas = linha.split(";");
-            if (colunas.length < 2) continue;
 
-            String dataStr = colunas[0].trim();          // RELEASE_DATE
-            String descricao = colunas[1].trim();        // TRANSACTION_TYPE
+            if ("nubank".equalsIgnoreCase(banco)) {
+                // Exemplo: Data;Categoria;Valor;Descrição
+                String separador = linha.contains(",") ? "," : ";";
+                String[] colunas = linha.split(separador);
 
-            // Normaliza encoding (opcional: remove caracteres estranhos)
-            descricao = new String(descricao.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+                if (colunas.length < 3) continue;
 
-            // Filtrar apenas tipos que são gastos
-            if (!(descricao.startsWith("Pagamento com QR Pix")
-                    || descricao.startsWith("Transferência Pix enviada") // já decodificado corretamente
-                    || descricao.startsWith("TransferÃªncia Pix enviada") // fallback caso encoding venha quebrado
-                    || descricao.startsWith("Pagamento")
-                    || descricao.startsWith("Pagamento de contas"))) {
-                continue; // ignora outras transações (ex.: recebimentos, rendimentos)
+                try {
+
+                    String dataStr;
+                    String descricao;
+                    String valorStr;
+
+                    if (",".equals(separador)) {
+                        // Novo formato: date,title,amount
+                        dataStr = colunas[0].trim();        // 2025-06-30
+                        descricao = colunas[1].trim();      // Bemais Supermercados
+                        valorStr = colunas[2].trim();       // 95.95
+                    } else {
+                     // Antigo formato: Data;Categoria;Valor;Descrição
+                        dataStr = colunas[0].trim();
+                        descricao = colunas[3].trim();
+                        valorStr = colunas[2].trim().replace(",", ".");
+                    }
+
+                    BigDecimal valor = new BigDecimal(valorStr.replaceAll("[^0-9.-]", ""));
+                    valor = valor.abs();
+
+                    LocalDate dataFormatada;
+                    if (",".equals(separador)) {
+                        dataFormatada = LocalDate.parse(dataStr, DateTimeFormatter.ISO_LOCAL_DATE);
+                    } else {
+                        dataFormatada = LocalDate.parse(dataStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    }
+
+                    Gasto gasto = new Gasto(userId, valor, dataFormatada.toString(), descricao, "Outros");
+                    cadastrarGasto(gasto, userId);
+                    count++;
+
+                } catch (Exception e) {
+                            // ignora linha inválida
+                }
             }
+            else if ("mercado_pago".equalsIgnoreCase(banco)) {
+                // Regras antigas que você já tinha
+                String[] colunas = linha.split(";");
+                if (colunas.length < 2) continue;
+                String dataStr = colunas[0].trim();
+                String descricao = colunas[1].trim();
+                descricao = new String(descricao.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
 
-            // Campo de valor: normalmente o penúltimo ou último campo, vamos assumir penúltimo (débitos)
-            String valorStr = colunas[colunas.length - 2].trim().replace(",", ".");
-            if (valorStr.isEmpty()) continue;
+                if (!(descricao.startsWith("Pagamento com QR Pix")
+                        || descricao.startsWith("Transferência Pix enviada")
+                        || descricao.startsWith("Pagamento")
+                        || descricao.startsWith("Pagamento de contas"))) {
+                    continue;
+                }
 
-            try {
-                BigDecimal valor = new BigDecimal(valorStr.replaceAll("[^0-9.-]", "")); // remove caracteres não numéricos
-                valor = valor.abs(); // registra sempre positivo
+                String valorStr = colunas[colunas.length - 2].trim().replace(",", ".");
+                if (valorStr.isEmpty()) continue;
 
-                // Converter data para ISO yyyy-MM-dd
-                LocalDate dataFormatada = LocalDate.parse(dataStr, formatterEntrada);
+                try {
+                    BigDecimal valor = new BigDecimal(valorStr.replaceAll("[^0-9.-]", ""));
+                    valor = valor.abs();
+                    LocalDate dataFormatada = LocalDate.parse(dataStr, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
 
-                Gasto gasto = new Gasto(userId, valor, dataFormatada.toString(), descricao, "Outros");
-                cadastrarGasto(gasto, userId);
-                count++;
-            } catch (Exception e) {
-                // ignora linha inválida, mas logaria se necessário
+                    Gasto gasto = new Gasto(userId, valor, dataFormatada.toString(), descricao, "Outros");
+                    cadastrarGasto(gasto, userId);
+                    count++;
+                } catch (Exception e) {
+                    // ignora
+                }
             }
         }
 

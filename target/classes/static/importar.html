@@ -26,14 +26,12 @@
             <div class="flex gap-4 mt-2">
                 <label>
                     <input type="radio" name="formato" value="csv" checked>
-                    <span class="ml-1">CSV</span>
+                    <span class="bg-green-600 text-white px-4 py-2 rounded">CSV</span>
                 </label>
-                <label>
+              <!--  <label>
                     <input type="radio" name="formato" value="pdf">
-                    <span class="ml-1">PDF</span>
-                </label>
-                <button class="bg-gray-400 text-white px-4 py-2 rounded">PDF (indisponível)</button>
-                <button class="bg-green-600 text-white px-4 py-2 rounded cursor-not-allowed">CSV (ativo)</button>
+                    <span class="bg-green-600 text-white px-4 py-2 rounded">PDF</span>
+                </label>-->
             </div>
         </div>
 
@@ -41,13 +39,13 @@
             <label class="block font-semibold">Banco</label>
             <select id="banco" class="w-full p-2 border rounded">
                 <option value="mercado_pago">Mercado Pago</option>
-                <option value="nubank">Nubank</option>
+            <!--<option value="nubank">Nubank</option>-->
             </select>
         </div>
 
         <div class="mb-4">
-            <label class="block font-semibold">Selecione o Arquivo CSV</label>
-            <input type="file" id="arquivo" accept=".csv" class="w-full p-2 border rounded">
+            <label class="block font-semibold">Selecione o Arquivo</label>
+            <input type="file" id="arquivo" accept=".csv,.pdf" class="w-full p-2 border rounded">
         </div>
 
         <button id="btn-upload" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
@@ -70,9 +68,10 @@
         const btn = document.getElementById("btn-upload");
         const arquivo = document.getElementById("arquivo").files[0];
         const banco = document.getElementById("banco").value;
+        const formato = document.querySelector('input[name="formato"]:checked').value;
 
         if (!arquivo) {
-            alert("Selecione um arquivo CSV ou PDF");
+            alert("Selecione um arquivo CSV");
             return;
         }
 
@@ -84,6 +83,7 @@
             const formData = new FormData();
             formData.append("arquivo", arquivo);
             formData.append("banco", banco);
+            formData.append("formato", formato);
 
             const response = await fetch("/api/importacao/upload", {
                 method: "POST",
